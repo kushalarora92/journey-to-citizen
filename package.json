@@ -1,0 +1,20 @@
+{
+  "name": "journey-to-citizen",
+  "version": "0.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "dev": "turbo run dev --parallel",
+    "build": "turbo run build",
+    "lint": "turbo run lint",
+    "test": "turbo run test"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "packageManager": "pnpm@10.18.0",
+  "devDependencies": {
+    "turbo": "^2.5.8"
+  },
+  "private": true
+}

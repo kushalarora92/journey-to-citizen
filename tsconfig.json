@@ -1,0 +1,12 @@
+{
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "@journey-to-citizen/*": ["packages/*/src"]
+    },
+    "allowJs": true,
+    "skipLibCheck": true,
+    "jsx": "react-jsx",
+  },
+  "include": ["apps/**/*", "packages/**/*"]
+}
