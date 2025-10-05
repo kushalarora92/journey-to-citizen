@@ -5,13 +5,17 @@ import { Text, View } from '@/components/Themed';
 import { useAuth } from '@/context/AuthContext';
 
 export default function TabOneScreen() {
-  const { user } = useAuth();
+  const { user, userProfile, profileLoading } = useAuth();
+
+  // Get display name or fallback to email
+  const displayName = userProfile?.displayName || user?.email?.split('@')[0] || 'User';
 
   return (
     <ScrollView style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.title}>Welcome!</Text>
-        <Text style={styles.subtitle}>{user?.email}</Text>
+        <Text style={styles.title}>
+          Welcome, {profileLoading ? '...' : displayName}!
+        </Text>
         {!user?.emailVerified && (
           <View style={styles.warningBox}>
             <Text style={styles.warningText}>

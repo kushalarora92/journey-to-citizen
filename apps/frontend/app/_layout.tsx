@@ -26,22 +26,25 @@ SplashScreen.preventAutoHideAsync();
 
 function RootLayoutNav() {
   const colorScheme = useColorScheme();
-  const { user, loading } = useAuth();
+  const { user, loading, needsProfileSetup, profileLoading } = useAuth();
   const segments = useSegments();
   const router = useRouter();
 
   useEffect(() => {
-    if (loading) return;
+    if (loading || profileLoading) return;
 
     const inAuthGroup = segments[0] === 'auth';
     const inVerifyEmailScreen = segments[1] === 'verify-email';
+    const inProfileSetupScreen = segments[0] === 'profile-setup';
 
     console.log('Navigation check:', {
       hasUser: !!user,
       email: user?.email,
       emailVerified: user?.emailVerified,
+      needsProfileSetup,
       inAuthGroup,
       inVerifyEmailScreen,
+      inProfileSetupScreen,
       segments,
     });
 
@@ -55,17 +58,24 @@ function RootLayoutNav() {
         console.log('Redirecting to verify-email (unverified user)');
         router.replace('/auth/verify-email' as any);
       }
-    } else if (user && user.emailVerified && inAuthGroup) {
-      // Redirect to tabs if user is authenticated and verified
-      console.log('Redirecting to tabs (verified user)');
+    } else if (user && user.emailVerified && needsProfileSetup) {
+      // Redirect to profile setup if user needs to complete profile
+      if (!inProfileSetupScreen) {
+        console.log('Redirecting to profile-setup (incomplete profile)');
+        router.replace('/profile-setup' as any);
+      }
+    } else if (user && user.emailVerified && !needsProfileSetup && (inAuthGroup || inProfileSetupScreen)) {
+      // Redirect to tabs if user is authenticated, verified, and has completed profile
+      console.log('Redirecting to tabs (complete profile)');
       router.replace('/(tabs)');
     }
-  }, [user, loading, segments]);
+  }, [user, loading, needsProfileSetup, profileLoading, segments]);
 
   return (
     <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
       <Stack>
         <Stack.Screen name="auth" options={{ headerShown: false }} />
+        <Stack.Screen name="profile-setup" options={{ headerShown: false }} />
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen name="modal" options={{ presentation: 'modal' }} />
       </Stack>

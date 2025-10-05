@@ -48,6 +48,7 @@ Journey to Citizen is a comprehensive platform designed to assist newcomers to C
 - **AVOID** using React Native StyleSheet - unless component is very custom and cannot be achieved with gluestack or NativeWind
 - Avoid inline styles unless absolutely necessary
 - Maintain a consistent design language throughout the app using gluestack's design tokens
+- **Icons**: Use `@expo/vector-icons/FontAwesome` for all icons - avoid emojis for consistency and cross-platform compatibility
 
 ### Environment Variables
 - **ALWAYS** use `EXPO_PUBLIC_` prefix for client-side environment variables
@@ -96,6 +97,53 @@ Journey to Citizen is a comprehensive platform designed to assist newcomers to C
 - Firebase config: `config/firebase.ts`
 - Reusable components: `components/*.tsx`
 - Environment variables: `.env` (with `EXPO_PUBLIC_` prefix)
+- Cloud Functions: `apps/functions/functions/src/*.ts`
+- Firestore rules: `firestore.rules`
+
+### Firebase Functions Patterns
+- Use **v2 callable functions** for client-facing APIs that require authentication
+- Use **v1 HTTP functions** only for webhooks or public endpoints
+- Always check `request.auth` in callable functions for authentication
+- Use `firebase-admin` SDK for server-side operations
+- Initialize Admin SDK once: `admin.initializeApp()`
+- Access Firestore: `const db = admin.firestore()`
+- Use `admin.firestore.FieldValue.serverTimestamp()` for timestamps
+- Implement proper error handling with `HttpsError`
+- Use structured logging: `logger.info()`, `logger.error()`
+- Set `maxInstances` globally or per-function for cost control
+- Example callable function:
+  ```typescript
+  export const myFunction = onCall(async (request) => {
+    if (!request.auth) {
+      throw new HttpsError('unauthenticated', 'Must be logged in');
+    }
+    const userId = request.auth.uid;
+    // Your logic here
+    return { success: true, data: {} };
+  });
+  ```
+
+### Firestore Patterns
+- Use user's Firebase Auth UID as document ID in `users` collection
+- Structure: `users/{userId}/...`
+- Always include `createdAt` and `updatedAt` timestamps
+- Use security rules to enforce user can only access their own data
+- Use subcollections for nested data (e.g., `users/{userId}/absences/{absenceId}`)
+- Batch operations for multiple writes
+- Use transactions for atomic operations
+- Example security rule:
+  ```javascript
+  match /users/{userId} {
+    allow read, write: if request.auth != null && request.auth.uid == userId;
+  }
+  ```
+
+### Development Workflow
+- Use Firebase Emulators for local development
+- Connect frontend to emulators in development mode
+- Test functions through the Emulator UI (http://localhost:4000)
+- Deploy functions: `firebase deploy --only functions`
+- Deploy rules: `firebase deploy --only firestore:rules`
 
 
 ## Tech Stack
@@ -114,8 +162,9 @@ Journey to Citizen is a comprehensive platform designed to assist newcomers to C
 
 ### Backend & Services
 - **Firebase Authentication** - User auth (email/password)
-- **Firebase** (future: Firestore for database)
-- **NestJS API** - Backend API (in `apps/api`)
+- **Cloud Firestore** - NoSQL database for user data
+- **Firebase Cloud Functions** - Serverless backend (in `apps/functions`)
+- **Firebase Emulator Suite** - Local development environment
 
 ### Development Tools
 - **Jest** - Testing framework
@@ -134,13 +183,64 @@ Journey to Citizen is a comprehensive platform designed to assist newcomers to C
 .
 ├── apps
 │   ├── frontend    # Expo app (React Native + Web)
-│   └── api         # NestJS API
+│   └── functions   # Firebase Cloud Functions
+│       └── functions/
+│           └── src/
+│               └── index.ts  # Cloud Functions code
 ├── packages
 │   ├── ui          # Shared UI components
-│   ├── types       # Shared TypeScript types shared between API and frontend
-│   └── utils       # Shared utilities like date-fns wrappers, etc.
+│   ├── types       # Shared TypeScript types
+│   └── utils       # Shared utilities
+├── docs            # Documentation (organized by feature)
+├── firebase.json   # Firebase configuration
+├── firestore.rules # Firestore security rules
 └── turbo.json      # Turborepo configuration
 ```
+
+## Documentation Guidelines
+
+### Organization Structure
+All project documentation must be organized in the `docs/` folder at the workspace root following this structure:
+
+```
+docs/
+├── 1.authentication/           # Feature group (numbered)
+│   ├── 2024-12-15_auth_flow.md
+│   └── 2024-12-20_password_reset.md
+├── 2.profile-management/       # Feature group (numbered)
+│   ├── 2024-12-18_profile_setup.md
+│   └── 2024-12-22_profile_edit.md
+├── 3.shared-types/             # Feature group (numbered)
+│   └── 2024-12-25_implementation.md
+└── README.md                   # Index of all documentation
+```
+
+### Naming Conventions
+- **Folders**: `{number}.{feature-name}/` (lowercase, hyphenated)
+  - Example: `1.authentication/`, `2.profile-management/`, `3.absence-tracking/`
+  - Number indicates implementation order or priority
+  
+- **Files**: `{YYYY-MM-DD}_{descriptive-name}.md`
+  - Example: `2024-12-25_firebase_migration.md`
+  - Date reflects when the feature/document was created
+  - Use lowercase and hyphens for readability
+
+### Documentation Standards
+- Every major feature should have its own numbered folder
+- Include a README.md in each feature folder summarizing the documents
+- Root `docs/README.md` should maintain an index of all feature folders
+- Add dates to track documentation chronology
+- Group related documents together (setup, implementation, testing, troubleshooting)
+- Include code examples, configuration details, and troubleshooting sections
+- Keep documentation up-to-date when making code changes
+
+### When to Create Documentation
+- New feature implementation (setup, flow, API contracts)
+- Architecture decisions (shared types, state management patterns)
+- Deployment procedures and production configs
+- Troubleshooting guides for common issues
+- Integration guides (Firebase, third-party services)
+- Testing strategies and checklists
 
 
 ## License

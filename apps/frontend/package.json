@@ -16,6 +16,7 @@
     "@gluestack-ui/core": "^3.0.10",
     "@gluestack-ui/themed": "^1.1.73",
     "@gluestack-ui/utils": "^3.0.7",
+    "@journey-to-citizen/types": "workspace:*",
     "@journey-to-citizen/ui": "workspace:*",
     "@legendapp/motion": "^2.4.0",
     "@react-native-async-storage/async-storage": "^2.2.0",
