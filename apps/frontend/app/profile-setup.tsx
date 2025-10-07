@@ -23,10 +23,8 @@ import { useFirebaseFunctions } from '@/hooks/useFirebaseFunctions';
 
 export default function ProfileSetupScreen() {
   const router = useRouter();
-  const { refreshProfile } = useAuth();
-  const { updateUserProfile } = useFirebaseFunctions();
-
-  // Form state
+  const { userProfile, updateLocalProfile } = useAuth();
+  const { updateUserProfile } = useFirebaseFunctions();  // Form state
   const [displayName, setDisplayName] = useState('');
   const [immigrationStatus, setImmigrationStatus] = useState<'visitor' | 'student' | 'worker' | 'permanent_resident'>('permanent_resident');
   const [hasPR, setHasPR] = useState<'yes' | 'no'>('no');
@@ -71,7 +69,7 @@ export default function ProfileSetupScreen() {
       // Determine final immigration status
       const finalStatus = hasPR === 'yes' ? 'permanent_resident' : immigrationStatus;
 
-      await updateUserProfile({
+      const result = await updateUserProfile({
         displayName: displayName.trim(),
         immigrationStatus: finalStatus,
         prDate: prDate ? prDate.toISOString() : null,
@@ -80,7 +78,10 @@ export default function ProfileSetupScreen() {
         travelAbsences: [],
       });
 
-      await refreshProfile();
+      // Update local profile with returned data (no extra Firestore read)
+      if (result.data) {
+        updateLocalProfile(result.data);
+      }
 
       // Determine where to redirect
       if (hadPresenceBeforePR === 'yes') {

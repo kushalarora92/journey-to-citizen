@@ -42,19 +42,26 @@ export const PURPOSE_OF_STAY_LABELS: Record<string, string> = {
 };
 
 /**
- * User profile data structure stored in Firestore
+ * Static eligibility data calculated by backend
+ * These values are stored in Firestore and only change when profile is updated
  */
-export interface UserProfile {
-  uid: string;
-  email: string | null;
-  displayName?: string | null;
-  immigrationStatus?: 'visitor' | 'student' | 'worker' | 'permanent_resident';
-  profileComplete?: boolean;
-  prDate?: any; // Firestore Timestamp
-  presenceInCanada?: PresenceEntry[];
-  travelAbsences?: AbsenceEntry[];
-  createdAt?: any; // Firestore Timestamp
-  updatedAt?: any; // Firestore Timestamp
+export interface StaticEligibilityData {
+  daysInCanadaAsPR: number; // Days as PR minus absences (snapshot at calculation time)
+  preDaysCredit: number; // Credit from pre-PR presence (max 365 days)
+  totalAbsenceDays: number; // Total days absent from Canada
+  earliestEligibilityDate: any; // Firestore Timestamp - when user becomes eligible
+}
+
+/**
+ * Complete eligibility calculation details
+ * Combines static backend data with dynamic frontend calculations
+ */
+export interface EligibilityCalculation extends StaticEligibilityData {
+  totalEligibleDays: number; // daysInCanadaAsPR + preDaysCredit (calculated from static data)
+  daysRequired: number; // Always 1095 (3 years)
+  daysRemaining: number; // Calculated dynamically in frontend based on current date
+  isEligible: boolean; // Calculated dynamically: today >= earliestEligibilityDate
+  progress: number; // Percentage 0-100 (calculated dynamically)
 }
 
 /**
@@ -75,6 +82,26 @@ export interface AbsenceEntry {
   from: any; // Firestore Timestamp
   to: any; // Firestore Timestamp
   place?: string;
+}
+
+/**
+ * User profile data structure stored in Firestore
+ */
+export interface UserProfile {
+  uid: string;
+  email: string | null;
+  displayName?: string | null;
+  immigrationStatus?: 'visitor' | 'student' | 'worker' | 'permanent_resident';
+  profileComplete?: boolean;
+  prDate?: any; // Firestore Timestamp
+  presenceInCanada?: PresenceEntry[];
+  travelAbsences?: AbsenceEntry[];
+  
+  // Backend-calculated static eligibility data (updated on profile changes)
+  staticEligibility?: StaticEligibilityData;
+  
+  createdAt?: any; // Firestore Timestamp
+  updatedAt?: any; // Firestore Timestamp
 }
 
 /**

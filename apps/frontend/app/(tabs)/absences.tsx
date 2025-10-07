@@ -8,7 +8,7 @@ import DateRangeList, { DateRangeEntry } from '@/components/DateRangeList';
 import { AbsenceEntry } from '@journey-to-citizen/types';
 
 export default function AbsencesScreen() {
-  const { userProfile, profileLoading, refreshProfile } = useAuth();
+  const { userProfile, profileLoading, updateLocalProfile } = useAuth();
   const { updateUserProfile } = useFirebaseFunctions();
 
   if (profileLoading) {
@@ -46,11 +46,11 @@ export default function AbsencesScreen() {
         place: (entry as any).place || '',
       } as AbsenceEntry;
       
-      await updateUserProfile({
+      const result = await updateUserProfile({
         travelAbsences: [...currentAbsences, newEntry],
       });
       
-      await refreshProfile();
+      if (result.data) updateLocalProfile(result.data);
     } catch (error: any) {
       throw new Error(error.message || 'Failed to add trip');
     }
@@ -63,11 +63,11 @@ export default function AbsencesScreen() {
         entry.id === id ? { ...entry, ...updates } : entry
       );
       
-      await updateUserProfile({
+      const result = await updateUserProfile({
         travelAbsences: updatedAbsences,
       });
       
-      await refreshProfile();
+      if (result.data) updateLocalProfile(result.data);
     } catch (error: any) {
       throw new Error(error.message || 'Failed to update trip');
     }
@@ -78,11 +78,11 @@ export default function AbsencesScreen() {
       const currentAbsences = userProfile?.travelAbsences || [];
       const updatedAbsences = currentAbsences.filter(entry => entry.id !== id);
       
-      await updateUserProfile({
+      const result = await updateUserProfile({
         travelAbsences: updatedAbsences,
       });
       
-      await refreshProfile();
+      if (result.data) updateLocalProfile(result.data);
     } catch (error: any) {
       throw new Error(error.message || 'Failed to delete trip');
     }

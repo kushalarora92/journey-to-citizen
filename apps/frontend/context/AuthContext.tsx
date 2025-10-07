@@ -23,6 +23,7 @@ interface AuthContextType {
   resetPassword: (email: string) => Promise<void>;
   sendVerificationEmail: () => Promise<void>;
   refreshProfile: () => Promise<void>;
+  updateLocalProfile: (profile: UserProfile) => void;
   needsProfileSetup: boolean;
 }
 
@@ -113,6 +114,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  const updateLocalProfile = (profile: UserProfile) => {
+    setUserProfile(profile);
+  };
+
   const resetPassword = async (email: string) => {
     await sendPasswordResetEmail(auth, email);
   };
@@ -134,6 +139,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     resetPassword,
     sendVerificationEmail,
     refreshProfile,
+    updateLocalProfile,
     needsProfileSetup,
   };
 

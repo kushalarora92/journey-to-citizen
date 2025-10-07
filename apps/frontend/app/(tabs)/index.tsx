@@ -5,7 +5,7 @@ import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { Text, View } from '@/components/Themed';
 import { useAuth } from '@/context/AuthContext';
 import { 
-  calculateEligibility, 
+  getEligibility, 
   getUpcomingTrips, 
   formatDate, 
   formatDaysRemaining 
@@ -18,8 +18,8 @@ export default function TabOneScreen() {
   // Get display name or fallback to email
   const displayName = userProfile?.displayName || user?.email?.split('@')[0] || 'User';
 
-  // Calculate eligibility
-  const eligibility = calculateEligibility(userProfile);
+  // Get backend-calculated eligibility
+  const eligibility = getEligibility(userProfile);
   const upcomingTrips = getUpcomingTrips(userProfile);
 
   // Check if profile is complete enough to show calculations

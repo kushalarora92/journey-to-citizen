@@ -10,7 +10,7 @@ import DateRangeList, { DateRangeEntry } from '@/components/DateRangeList';
 import { PresenceEntry, IMMIGRATION_STATUS_LABELS, PURPOSE_OF_STAY_LABELS } from '@journey-to-citizen/types';
 
 export default function TabTwoScreen() {
-  const { user, userProfile, profileLoading, sendVerificationEmail, refreshProfile } = useAuth();
+  const { user, userProfile, profileLoading, sendVerificationEmail, updateLocalProfile } = useAuth();
   const { updateUserProfile } = useFirebaseFunctions();
   const [isEditingName, setIsEditingName] = useState(false);
   const [editedName, setEditedName] = useState('');
@@ -39,8 +39,8 @@ export default function TabTwoScreen() {
 
     setIsSaving(true);
     try {
-      await updateUserProfile({ displayName: editedName.trim() });
-      await refreshProfile();
+      const result = await updateUserProfile({ displayName: editedName.trim() });
+      if (result.data) updateLocalProfile(result.data);
       const successMessage = 'Name updated successfully!';
       Platform.OS === 'web' ? alert(successMessage) : Alert.alert('Success', successMessage);
       setIsEditingName(false);
@@ -64,8 +64,8 @@ export default function TabTwoScreen() {
         updates.presenceInCanada = [];
       }
       
-      await updateUserProfile(updates);
-      await refreshProfile();
+      const result = await updateUserProfile(updates);
+      if (result.data) updateLocalProfile(result.data);
       setIsEditingStatus(false);
       const successMessage = 'Immigration status updated successfully!';
       Platform.OS === 'web' ? alert(successMessage) : Alert.alert('Success', successMessage);
@@ -97,8 +97,8 @@ export default function TabTwoScreen() {
 
     setIsSaving(true);
     try {
-      await updateUserProfile({ prDate: editedPRDate.toISOString() });
-      await refreshProfile();
+      const result = await updateUserProfile({ prDate: editedPRDate.toISOString() });
+      if (result.data) updateLocalProfile(result.data);
       const successMessage = 'PR date updated successfully!';
       Platform.OS === 'web' ? alert(successMessage) : Alert.alert('Success', successMessage);
       setIsEditingPRDate(false);
@@ -129,11 +129,11 @@ export default function TabTwoScreen() {
         purpose: (entry as any).purpose || 'visitor',
       } as PresenceEntry;
       
-      await updateUserProfile({
+      const result = await updateUserProfile({
         presenceInCanada: [...currentPresence, newEntry],
       });
       
-      await refreshProfile();
+      if (result.data) updateLocalProfile(result.data);
     } catch (error: any) {
       throw new Error(error.message || 'Failed to add entry');
     }
@@ -146,11 +146,11 @@ export default function TabTwoScreen() {
         entry.id === id ? { ...entry, ...updates } : entry
       );
       
-      await updateUserProfile({
+      const result = await updateUserProfile({
         presenceInCanada: updatedPresence,
       });
       
-      await refreshProfile();
+      if (result.data) updateLocalProfile(result.data);
     } catch (error: any) {
       throw new Error(error.message || 'Failed to update entry');
     }
@@ -161,11 +161,11 @@ export default function TabTwoScreen() {
       const currentPresence = userProfile?.presenceInCanada || [];
       const updatedPresence = currentPresence.filter(entry => entry.id !== id);
       
-      await updateUserProfile({
+      const result = await updateUserProfile({
         presenceInCanada: updatedPresence,
       });
       
-      await refreshProfile();
+      if (result.data) updateLocalProfile(result.data);
     } catch (error: any) {
       throw new Error(error.message || 'Failed to delete entry');
     }

@@ -230,7 +230,7 @@ docs/
 - Every major feature should have its own numbered folder
 - Include a README.md in each feature folder summarizing the documents
 - Root `docs/README.md` should maintain an index of all feature folders
-- Add dates to track documentation chronology
+- Add dates to track documentation chronology (prefix date on every document created grouped by feature with own numbered folder)
 - Group related documents together (setup, implementation, testing, troubleshooting)
 - Include code examples, configuration details, and troubleshooting sections
 - Keep documentation up-to-date when making code changes
