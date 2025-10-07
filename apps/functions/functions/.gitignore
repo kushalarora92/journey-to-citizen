@@ -23,3 +23,6 @@ serviceAccountKey.json
 *.key
 *.pem
 *.p12
+
+# Generated types (copied by predeploy script)
+types/

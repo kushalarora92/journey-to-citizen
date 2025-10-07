@@ -8,14 +8,15 @@
     "shell": "npm run build && firebase functions:shell",
     "start": "npm run shell",
     "deploy": "firebase deploy --only functions",
-    "logs": "firebase functions:log"
+    "logs": "firebase functions:log",
+    "copy-types": "node ./copy-types.js"
   },
   "engines": {
     "node": "20"
   },
   "main": "lib/index.js",
   "dependencies": {
-    "@journey-to-citizen/types": "workspace:*",
+    "@journey-to-citizen/types": "file:./types",
     "firebase-admin": "^12.7.0",
     "firebase-functions": "^6.0.1"
   },

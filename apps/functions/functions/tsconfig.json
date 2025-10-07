@@ -6,13 +6,10 @@
     "noImplicitReturns": true,
     "noUnusedLocals": true,
     "outDir": "lib",
+    "rootDir": "src",
     "sourceMap": true,
     "strict": true,
-    "target": "es2017",
-    "baseUrl": ".",
-    "paths": {
-      "@journey-to-citizen/types": ["../../../packages/types/src"]
-    }
+    "target": "es2017"
   },
   "compileOnSave": true,
   "include": [

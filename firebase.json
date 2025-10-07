@@ -17,8 +17,10 @@
         "*.local"
       ],
       "predeploy": [
-        "npm --prefix \"$RESOURCE_DIR\" run lint",
-        "npm --prefix \"$RESOURCE_DIR\" run build"
+        "cd packages/types && pnpm build",
+        "pnpm --prefix \"$RESOURCE_DIR\" run copy-types",
+        "pnpm --prefix \"$RESOURCE_DIR\" run lint",
+        "pnpm --prefix \"$RESOURCE_DIR\" run build"
       ]
     }
   ],
