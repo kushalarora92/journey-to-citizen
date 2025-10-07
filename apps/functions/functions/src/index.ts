@@ -17,6 +17,7 @@ import {
   UpdateProfileData,
   ApiResponse,
 } from "@journey-to-citizen/types";
+import {calculateEligibility} from "./utils/eligibilityCalculator";
 
 // Initialize Firebase Admin SDK
 admin.initializeApp();
@@ -78,7 +79,7 @@ export const getUserInfo = onCall(async (request): Promise<UserProfile> => {
         uid: userId,
         email: request.auth.token.email || null,
         displayName: request.auth.token.name || null,
-        status: "inactive",
+        profileComplete: false,
       };
     }
 
@@ -103,6 +104,7 @@ export const getUserInfo = onCall(async (request): Promise<UserProfile> => {
 
 /**
  * Callable function to create or update user profile
+ * Automatically calculates citizenship eligibility when profile is updated
  *
  * @param {object} request - The request object containing profile data
  * @returns {object} Success message with updated data
@@ -130,6 +132,21 @@ export const updateUserProfile = onCall(
         updatedAt: admin.firestore.FieldValue.serverTimestamp(),
       };
 
+      // Calculate eligibility if profile has PR date and relevant fields
+      if (profileData.prDate) {
+        logger.info(`Calculating eligibility for userId: ${userId}`);
+        const eligibility = calculateEligibility({
+          prDate: profileData.prDate,
+          presenceInCanada: profileData.presenceInCanada,
+          travelAbsences: profileData.travelAbsences,
+        });
+        userData.eligibility = eligibility;
+        logger.info(`Eligibility calculated for userId: ${userId}`, {
+          isEligible: eligibility.isEligible,
+          totalEligibleDays: eligibility.totalEligibleDays,
+        });
+      }
+
       // Create or update user document
       const userRef = db.collection("users").doc(userId);
       const userDoc = await userRef.get();
@@ -146,7 +163,9 @@ export const updateUserProfile = onCall(
       return {
         success: true,
         message: "Profile updated successfully",
-        data: userData,
+        // userData contains server timestamps which don't match type exactly
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        data: userData as any,
       };
     } catch (error) {
       logger.error("Error updating user profile:", error);

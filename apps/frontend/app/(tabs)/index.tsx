@@ -4,8 +4,8 @@ import FontAwesome from '@expo/vector-icons/FontAwesome';
 
 import { Text, View } from '@/components/Themed';
 import { useAuth } from '@/context/AuthContext';
+import { EligibilityCalculation } from '@journey-to-citizen/types';
 import { 
-  calculateEligibility, 
   getUpcomingTrips, 
   formatDate, 
   formatDaysRemaining 
@@ -18,8 +18,20 @@ export default function TabOneScreen() {
   // Get display name or fallback to email
   const displayName = userProfile?.displayName || user?.email?.split('@')[0] || 'User';
 
-  // Calculate eligibility
-  const eligibility = calculateEligibility(userProfile);
+  // Get eligibility from stored profile data (calculated in backend)
+  const eligibility: EligibilityCalculation = userProfile?.eligibility || {
+    daysInCanadaAsPR: 0,
+    preDaysCredit: 0,
+    totalAbsenceDays: 0,
+    totalEligibleDays: 0,
+    daysRequired: 1095,
+    daysRemaining: 1095,
+    isEligible: false,
+    earliestApplicationDate: null,
+    progress: 0,
+    calculatedAt: null,
+  };
+  
   const upcomingTrips = getUpcomingTrips(userProfile);
 
   // Check if profile is complete enough to show calculations
