@@ -163,7 +163,9 @@ export const updateUserProfile = onCall(
       return {
         success: true,
         message: "Profile updated successfully",
-        data: userData as any, // userData contains server timestamps which don't match type exactly
+        // userData contains server timestamps which don't match type exactly
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        data: userData as any,
       };
     } catch (error) {
       logger.error("Error updating user profile:", error);

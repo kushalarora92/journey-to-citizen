@@ -1,19 +1,24 @@
 /**
  * Eligibility calculation utilities for Canadian citizenship
- * Calculates eligibility based on PR date, pre-PR presence, and travel absences
+ * Calculates eligibility based on PR date, pre-PR presence, and absences
  */
 
 import * as admin from "firebase-admin";
 import {EligibilityCalculation} from "@journey-to-citizen/types";
 
 interface ProfileData {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   prDate?: any; // Firestore Timestamp
   presenceInCanada?: Array<{
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     from: any; // Firestore Timestamp
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     to: any; // Firestore Timestamp
   }>;
   travelAbsences?: Array<{
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     from: any; // Firestore Timestamp
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     to: any; // Firestore Timestamp
   }>;
 }
@@ -22,10 +27,14 @@ interface ProfileData {
  * Calculate citizenship eligibility based on user profile
  *
  * Requirements:
- * - Must be physically present in Canada for 1095 days (3 years) in last 5 years
+ * - Must be physically present in Canada for 1095 days (3 years) in
+ *   last 5 years
  * - Each day before PR counts as 0.5 days (max 365 days credit)
  * - Only full days outside Canada count as absences
  * - Day of departure and return count as days IN Canada
+ *
+ * @param {ProfileData} profile - User profile data
+ * @return {EligibilityCalculation} Calculated eligibility result
  */
 export function calculateEligibility(
   profile: ProfileData
@@ -48,7 +57,9 @@ export function calculateEligibility(
   }
 
   const today = new Date();
-  const prDate = profile.prDate.toDate ? profile.prDate.toDate() : new Date(profile.prDate);
+  const prDate = profile.prDate.toDate ?
+    profile.prDate.toDate() :
+    new Date(profile.prDate);
 
   // Calculate days as PR
   const daysSincePR = Math.floor(
@@ -59,11 +70,15 @@ export function calculateEligibility(
   let preDaysCredit = 0;
   if (profile.presenceInCanada && profile.presenceInCanada.length > 0) {
     const totalPrePRDays = profile.presenceInCanada.reduce((total, entry) => {
-      const from = entry.from.toDate ? entry.from.toDate() : new Date(entry.from);
-      const to = entry.to.toDate ? entry.to.toDate() : new Date(entry.to);
+      const from = entry.from.toDate ?
+        entry.from.toDate() :
+        new Date(entry.from);
+      const to = entry.to.toDate ?
+        entry.to.toDate() :
+        new Date(entry.to);
       const days =
-        Math.floor((to.getTime() - from.getTime()) / (1000 * 60 * 60 * 24)) +
-        1;
+        Math.floor((to.getTime() - from.getTime()) /
+        (1000 * 60 * 60 * 24)) + 1;
       return total + days;
     }, 0);
 
@@ -77,17 +92,24 @@ export function calculateEligibility(
     totalAbsenceDays = profile.travelAbsences
       .filter((absence) => {
         // Only count past absences
-        const toDate = absence.to.toDate ? absence.to.toDate() : new Date(absence.to);
+        const toDate = absence.to.toDate ?
+          absence.to.toDate() :
+          new Date(absence.to);
         return toDate <= today;
       })
       .reduce((total, absence) => {
-        const from = absence.from.toDate ? absence.from.toDate() : new Date(absence.from);
-        const to = absence.to.toDate ? absence.to.toDate() : new Date(absence.to);
+        const from = absence.from.toDate ?
+          absence.from.toDate() :
+          new Date(absence.from);
+        const to = absence.to.toDate ?
+          absence.to.toDate() :
+          new Date(absence.to);
 
-        // Only count full days outside (exclude departure and return days)
+        // Only full days outside (exclude departure and return days)
         const days = Math.max(
           0,
-          Math.floor((to.getTime() - from.getTime()) / (1000 * 60 * 60 * 24)) - 1
+          Math.floor((to.getTime() - from.getTime()) /
+            (1000 * 60 * 60 * 24)) - 1
         );
         return total + days;
       }, 0);
@@ -102,6 +124,7 @@ export function calculateEligibility(
   const isEligible = totalEligibleDays >= daysRequired;
 
   // Calculate earliest application date
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let earliestApplicationDate: any = null;
   if (daysRemaining > 0) {
     // Assuming no future absences, calculate when they'll reach 1095 days
