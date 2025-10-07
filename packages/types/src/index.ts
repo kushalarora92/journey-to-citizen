@@ -53,6 +53,7 @@ export interface UserProfile {
   prDate?: any; // Firestore Timestamp
   presenceInCanada?: PresenceEntry[];
   travelAbsences?: AbsenceEntry[];
+  eligibility?: EligibilityCalculation; // Calculated eligibility data
   createdAt?: any; // Firestore Timestamp
   updatedAt?: any; // Firestore Timestamp
 }
@@ -75,6 +76,23 @@ export interface AbsenceEntry {
   from: any; // Firestore Timestamp
   to: any; // Firestore Timestamp
   place?: string;
+}
+
+/**
+ * Eligibility calculation result
+ * Stored with user profile for citizenship application tracking
+ */
+export interface EligibilityCalculation {
+  daysInCanadaAsPR: number;
+  preDaysCredit: number;
+  totalAbsenceDays: number;
+  totalEligibleDays: number;
+  daysRequired: number;
+  daysRemaining: number;
+  isEligible: boolean;
+  earliestApplicationDate: any; // Firestore Timestamp or null
+  progress: number; // Percentage 0-100
+  calculatedAt: any; // Firestore Timestamp - when this calculation was performed
 }
 
 /**
