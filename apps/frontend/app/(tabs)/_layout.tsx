@@ -79,10 +79,41 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
+        name="absences"
+        options={{
+          title: 'Travel',
+          tabBarIcon: ({ color }) => <TabBarIcon name="plane" color={color} />,
+          headerRight: () => (
+            <Pressable onPress={handleLogout}>
+              {({ pressed }) => (
+                <FontAwesome
+                  name="sign-out"
+                  size={25}
+                  color={Colors[colorScheme ?? 'light'].text}
+                  style={{ marginRight: 15, opacity: pressed ? 0.5 : 1 }}
+                />
+              )}
+            </Pressable>
+          ),
+        }}
+      />
+      <Tabs.Screen
         name="two"
         options={{
           title: 'Profile',
           tabBarIcon: ({ color }) => <TabBarIcon name="user" color={color} />,
+          headerRight: () => (
+            <Pressable onPress={handleLogout}>
+              {({ pressed }) => (
+                <FontAwesome
+                  name="sign-out"
+                  size={25}
+                  color={Colors[colorScheme ?? 'light'].text}
+                  style={{ marginRight: 15, opacity: pressed ? 0.5 : 1 }}
+                />
+              )}
+            </Pressable>
+          ),
         }}
       />
     </Tabs>

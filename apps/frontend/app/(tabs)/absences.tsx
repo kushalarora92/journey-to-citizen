@@ -1,0 +1,284 @@
+import React from 'react';
+import { StyleSheet, ScrollView } from 'react-native';
+import { View, Text, VStack, HStack } from '@gluestack-ui/themed';
+import { useAuth } from '@/context/AuthContext';
+import { useFirebaseFunctions } from '@/hooks/useFirebaseFunctions';
+import FontAwesome from '@expo/vector-icons/FontAwesome';
+import DateRangeList, { DateRangeEntry } from '@/components/DateRangeList';
+import { AbsenceEntry } from '@journey-to-citizen/types';
+
+export default function AbsencesScreen() {
+  const { userProfile, profileLoading, refreshProfile } = useAuth();
+  const { updateUserProfile } = useFirebaseFunctions();
+
+  if (profileLoading) {
+    return (
+      <View style={styles.container}>
+        <View style={styles.loadingContainer}>
+          <Text>Loading your travel history...</Text>
+        </View>
+      </View>
+    );
+  }
+
+  const absences = userProfile?.travelAbsences || [];
+  
+  // Separate past and future trips
+  const now = new Date();
+  const pastTrips = absences.filter(absence => {
+    const toDate = absence.to ? new Date(absence.to) : null;
+    return toDate && toDate < now;
+  });
+  
+  const upcomingTrips = absences.filter(absence => {
+    const fromDate = absence.from ? new Date(absence.from) : null;
+    return fromDate && fromDate > now;
+  });
+
+  // Handlers for absence entries
+  const handleAddAbsence = async (entry: Omit<DateRangeEntry, 'id'>) => {
+    try {
+      const currentAbsences = userProfile?.travelAbsences || [];
+      const newEntry = {
+        id: Date.now().toString(),
+        from: entry.from,
+        to: entry.to,
+        place: (entry as any).place || '',
+      } as AbsenceEntry;
+      
+      await updateUserProfile({
+        travelAbsences: [...currentAbsences, newEntry],
+      });
+      
+      await refreshProfile();
+    } catch (error: any) {
+      throw new Error(error.message || 'Failed to add trip');
+    }
+  };
+
+  const handleEditAbsence = async (id: string, updates: Partial<DateRangeEntry>) => {
+    try {
+      const currentAbsences = userProfile?.travelAbsences || [];
+      const updatedAbsences = currentAbsences.map(entry =>
+        entry.id === id ? { ...entry, ...updates } : entry
+      );
+      
+      await updateUserProfile({
+        travelAbsences: updatedAbsences,
+      });
+      
+      await refreshProfile();
+    } catch (error: any) {
+      throw new Error(error.message || 'Failed to update trip');
+    }
+  };
+
+  const handleDeleteAbsence = async (id: string) => {
+    try {
+      const currentAbsences = userProfile?.travelAbsences || [];
+      const updatedAbsences = currentAbsences.filter(entry => entry.id !== id);
+      
+      await updateUserProfile({
+        travelAbsences: updatedAbsences,
+      });
+      
+      await refreshProfile();
+    } catch (error: any) {
+      throw new Error(error.message || 'Failed to delete trip');
+    }
+  };
+
+  return (
+    <ScrollView style={styles.container}>
+      <View style={styles.section}>
+        <VStack space="lg">
+          {/* Header */}
+          <View>
+            <HStack alignItems="center" mb="$2">
+              <FontAwesome name="plane" size={24} color="#3b82f6" />
+              <Text style={styles.title}>Travel Absences</Text>
+            </HStack>
+            <Text style={styles.subtitle}>
+              Track all your trips outside Canada for accurate citizenship eligibility calculations.
+            </Text>
+          </View>
+
+          {/* Info Card */}
+          <View style={styles.infoCard}>
+            <HStack space="sm" alignItems="flex-start">
+              <FontAwesome name="info-circle" size={16} color="#3b82f6" style={{ marginTop: 2 }} />
+              <View style={{ flex: 1 }}>
+                <Text style={styles.infoTitle}>Important Rules</Text>
+                <Text style={styles.infoText}>
+                  • Include ALL trips, even day trips to the US{'\n'}
+                  • Day you left and returned count as days IN Canada{'\n'}
+                  • Only full days outside count as absences{'\n'}
+                  • You can add future trips to plan ahead
+                </Text>
+              </View>
+            </HStack>
+          </View>
+
+          {/* Upcoming Trips Alert */}
+          {upcomingTrips.length > 0 && (
+            <View style={styles.upcomingCard}>
+              <HStack space="sm" alignItems="center">
+                <FontAwesome name="calendar" size={18} color="#f59e0b" />
+                <Text style={styles.upcomingText}>
+                  You have {upcomingTrips.length} upcoming {upcomingTrips.length === 1 ? 'trip' : 'trips'} planned
+                </Text>
+              </HStack>
+            </View>
+          )}
+
+          {/* Statistics */}
+          {absences.length > 0 && (
+            <View style={styles.statsCard}>
+              <HStack justifyContent="space-around">
+                <View style={styles.statItem}>
+                  <Text style={styles.statValue}>{pastTrips.length}</Text>
+                  <Text style={styles.statLabel}>Past Trips</Text>
+                </View>
+                <View style={styles.statDivider} />
+                <View style={styles.statItem}>
+                  <Text style={styles.statValue}>{upcomingTrips.length}</Text>
+                  <Text style={styles.statLabel}>Upcoming</Text>
+                </View>
+                <View style={styles.statDivider} />
+                <View style={styles.statItem}>
+                  <Text style={styles.statValue}>{absences.length}</Text>
+                  <Text style={styles.statLabel}>Total</Text>
+                </View>
+              </HStack>
+            </View>
+          )}
+
+          {/* Date Range List */}
+          <View style={styles.listContainer}>
+            <DateRangeList
+              entries={absences}
+              onAdd={handleAddAbsence}
+              onEdit={handleEditAbsence}
+              onDelete={handleDeleteAbsence}
+              title="All Travel Absences"
+              emptyMessage="No trips recorded yet. Add your first trip to start tracking."
+              fields={[
+                {
+                  name: 'place',
+                  label: 'Destination',
+                  type: 'text',
+                  required: false,
+                },
+              ]}
+              allowFutureDates={true}
+            />
+          </View>
+
+          {/* Bottom Info */}
+          <View style={styles.bottomNote}>
+            <Text style={styles.bottomNoteText}>
+              💡 Tip: Add trips as soon as you book them to keep your eligibility date accurate.
+            </Text>
+          </View>
+        </VStack>
+      </View>
+    </ScrollView>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#fff',
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  section: {
+    padding: 20,
+  },
+  title: {
+    fontSize: 28,
+    fontWeight: 'bold',
+    marginLeft: 12,
+    color: '#1e293b',
+  },
+  subtitle: {
+    fontSize: 14,
+    color: '#64748b',
+    marginTop: 4,
+  },
+  infoCard: {
+    backgroundColor: '#eff6ff',
+    padding: 16,
+    borderRadius: 12,
+    borderLeftWidth: 4,
+    borderLeftColor: '#3b82f6',
+  },
+  infoTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#1e40af',
+    marginBottom: 8,
+  },
+  infoText: {
+    fontSize: 13,
+    color: '#475569',
+    lineHeight: 20,
+  },
+  upcomingCard: {
+    backgroundColor: '#fef3c7',
+    padding: 14,
+    borderRadius: 10,
+    borderLeftWidth: 4,
+    borderLeftColor: '#f59e0b',
+  },
+  upcomingText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#78350f',
+  },
+  statsCard: {
+    backgroundColor: '#f8fafc',
+    padding: 16,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
+  },
+  statItem: {
+    alignItems: 'center',
+  },
+  statValue: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#3b82f6',
+    marginBottom: 4,
+  },
+  statLabel: {
+    fontSize: 12,
+    color: '#64748b',
+    fontWeight: '500',
+  },
+  statDivider: {
+    width: 1,
+    backgroundColor: '#e2e8f0',
+  },
+  listContainer: {
+    marginTop: 8,
+  },
+  bottomNote: {
+    padding: 16,
+    backgroundColor: '#f0fdf4',
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#86efac',
+  },
+  bottomNoteText: {
+    fontSize: 13,
+    color: '#166534',
+    lineHeight: 18,
+  },
+});

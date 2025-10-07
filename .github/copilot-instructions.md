@@ -38,6 +38,7 @@ Journey to Citizen is a comprehensive platform designed to assist newcomers to C
 - Prioritize creating reusable components wherever possible (preferably themed components).
 - Ensure the app is responsive and works well on various screen sizes and orientations.
 - Write unit tests for critical components and functionalities.
+- Do not do unnecessary refactoring unless absolutely necessary.
 
 ### UI & Styling
 - **!!IMPORTANT!!** ALWAYS use gluestack-ui components as the PRIMARY component library
