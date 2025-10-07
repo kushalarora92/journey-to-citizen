@@ -343,19 +343,25 @@ export const updateUserProfile = onCall(
         );
       }
 
+      // Write update to Firestore
       await userRef.set(userData, {merge: true});
 
       logger.info(`User profile updated for userId: ${userId}`);
 
-      // Return complete profile by merging existing data with updates
+      // Read back for complete data with resolved timestamps
+      // Note: Reading from same DocumentReference after write is strongly
+      // consistent in Cloud Functions (guaranteed by Firestore)
+      const updatedDoc = await userRef.get();
+      const completeData = updatedDoc.data() || {};
+
+      // Return complete profile with all fields
       return {
         success: true,
         message: "Profile updated successfully",
         data: {
           uid: userId,
           email: request.auth.token.email || null,
-          ...existingData,
-          ...userData,
+          ...completeData,
         } as UserProfile,
       };
     } catch (error) {

@@ -57,7 +57,24 @@ function hasEligibilityFieldsChanged(userData, existingData, isNewUser): boolean
 }
 ```
 
-Reduced Firestore operations from **4 operations** (3 reads + 1 write) to **2 operations** (1 read + 1 write).
+Reduced Firestore operations and improved data accuracy.
+
+### Complete Data Response
+
+To ensure the frontend receives complete and accurate profile data (including resolved server timestamps), the backend reads the document after writing:
+
+```typescript
+await userRef.set(userData, {merge: true});
+const updatedDoc = await userRef.get();  // Strongly consistent read
+return { success: true, data: updatedDoc.data() };
+```
+
+**Why this is safe:**
+- Firestore provides **strong consistency by default** for all reads
+- Per [Firestore documentation](https://firebase.google.com/docs/firestore/understand-reads-writes-scale): "Cloud Firestore reads are strongly consistent. This means that a Cloud Firestore read returns the latest version of the data that reflects all writes that have been committed up until the start of the read."
+- Reading from the same DocumentReference immediately after writing guarantees we get the complete, merged data with resolved timestamps
+
+**Operations:** 2 reads + 1 write per update
 
 ### Frontend Optimization: Use Returned Data
 
@@ -76,30 +93,73 @@ if (result.data) updateLocalProfile(result.data);
 ```
 
 **Benefits:**
-- **10 Firestore reads eliminated** across the application
-- **No race condition** - Use guaranteed consistent data from write operation
-- **Faster UI updates** - No network roundtrip delay
-- **Lower costs** - 50% reduction in Firestore operations for profile updates
+- **10 Firestore reads eliminated** across the application (frontend no longer re-fetches)
+- **No race condition** - Backend returns complete data, frontend uses it directly
+- **Strong consistency guaranteed** - Firestore's default behavior ensures latest data
+- **Faster UI updates** - No network roundtrip delay for re-fetching
+- **Lower costs** - Eliminated redundant reads from frontend
 
 ## Consequences
 
 ### Positive
 - ✅ Centralized eligibility logic - easier to maintain and update
 - ✅ No app store updates needed for eligibility rule changes
-- ✅ 50% reduction in Firestore operations for profile updates
-- ✅ Eliminated race condition risk from eventual consistency
-- ✅ Faster UI response - no network delay for re-fetching
-- ✅ Lower Firebase costs
+- ✅ Eliminated 10 unnecessary Firestore reads from frontend
+- ✅ Strong consistency guaranteed by Firestore's default behavior
+- ✅ Complete and accurate data (including resolved timestamps)
+- ✅ Faster UI response - frontend uses returned data directly
+- ✅ Lower Firebase costs overall
 
 ### Negative
 - ⚠️ Slightly more complex architecture (hybrid calculation)
 - ⚠️ Requires coordination between backend types and frontend calculations
 - ⚠️ Frontend must handle result.data from all update operations
+- ⚠️ Additional read per update (2 reads + 1 write instead of 1 read + 1 write)
 
 ### Mitigation
 - Shared types package (`@journey-to-citizen/types`) ensures type safety between backend and frontend
 - Frontend utility functions (`calculateEligibility.ts`) centralize dynamic calculations
 - Added `updateLocalProfile()` helper to AuthContext for consistent pattern
+- Extra read in backend is justified by data accuracy and elimination of 10 frontend reads
+
+## Firestore Consistency Guarantees
+
+### Strong Consistency by Default
+
+Per [Firebase documentation](https://firebase.google.com/docs/firestore/understand-reads-writes-scale):
+
+> "By default, Cloud Firestore reads are strongly consistent. This strong consistency means that a Cloud Firestore read returns the latest version of the data that reflects all writes that have been committed up until the start of the read."
+
+**What this means for our implementation:**
+- ✅ Reading immediately after writing **always** returns the latest data
+- ✅ No eventual consistency issues within a single Cloud Function execution
+- ✅ Server timestamps are resolved and accurate in the read
+- ✅ All merged fields are present and correct
+
+### Why Extra Read is Necessary
+
+**Problem with spreading objects:**
+```typescript
+// ❌ WRONG: Missing fields and unresolved timestamps
+return {
+  ...existingData,
+  ...userData,  // Contains FieldValue.serverTimestamp() - not actual timestamp
+};
+```
+
+**Solution with post-write read:**
+```typescript
+// ✅ CORRECT: Complete data with resolved timestamps
+await userRef.set(userData, {merge: true});
+const updatedDoc = await userRef.get();  // Strongly consistent
+return updatedDoc.data();
+```
+
+**Benefits:**
+- Server timestamps are resolved to actual Timestamp objects
+- All fields (existing + new) are present in response
+- Guaranteed to match what's stored in Firestore
+- No data loss or missing fields in frontend state
 
 ## Implementation Details
 
@@ -123,9 +183,33 @@ if (result.data) updateLocalProfile(result.data);
 - `apps/frontend/app/(tabs)/absences.tsx` - Refactored 3 update operations
 
 ### Performance Metrics
-- **Before:** 4 Firestore operations per profile update (3 reads + 1 write)
-- **After:** 2 Firestore operations per profile update (1 read + 1 write)
-- **Improvement:** 50% reduction in Firestore operations
+
+**Backend per profile update:**
+- **Before optimization:** 3 reads + 1 write = 4 operations
+  - Read 1: Check existing data
+  - Read 2: Duplicate check (bug)
+  - Read 3: Another duplicate (bug)
+  - Write 1: Save updates
+- **After optimization:** 2 reads + 1 write = 3 operations
+  - Read 1: Check existing data
+  - Write 1: Save updates
+  - Read 2: Get complete data with resolved timestamps
+- **Backend improvement:** 25% reduction (4→3 operations)
+
+**Frontend per profile update:**
+- **Before optimization:** 1 Firestore read (via refreshProfile)
+- **After optimization:** 0 Firestore reads (uses returned data)
+- **Frontend improvement:** 100% reduction in redundant reads
+
+**Total system per update:**
+- **Before:** 4 backend + 1 frontend = 5 operations
+- **After:** 3 backend + 0 frontend = 3 operations
+- **Overall improvement:** 40% reduction in Firestore operations
+
+**Across 10 update locations in app:**
+- **Before:** 50 total operations (10 × 5)
+- **After:** 30 total operations (10 × 3)
+- **Total savings:** 20 Firestore operations eliminated
 
 ## References
 - Firebase Cloud Functions: `apps/functions/functions/src/index.ts`
