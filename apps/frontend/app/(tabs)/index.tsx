@@ -191,7 +191,7 @@ export default function TabOneScreen() {
             </View>
             
             <Text style={styles.calculationNote}>
-              Note: Each day before PR counts as 0.5 days (max 365). Absence days are excluded.
+              Note: Only the last 5 years count toward citizenship eligibility. Each day before PR counts as 0.5 days (max 365). Absence days are excluded.
             </Text>
           </View>
 

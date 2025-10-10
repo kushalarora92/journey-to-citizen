@@ -156,9 +156,18 @@ function calculateStaticEligibility(profile: Partial<UserProfile>): {
   const today = new Date();
   const prDate = timestampToDate(profile.prDate);
 
-  // Calculate days as PR
-  const daysSincePR = Math.floor(
-    (today.getTime() - prDate.getTime()) / (1000 * 60 * 60 * 24)
+  // Calculate 5-year eligibility window (citizenship requirement)
+  // Only days in the last 5 years count towards citizenship
+  const fiveYearsAgo = new Date(today);
+  fiveYearsAgo.setFullYear(today.getFullYear() - 5);
+
+  // Start counting from PR date OR 5 years ago, whichever is later
+  const eligibilityWindowStart = prDate > fiveYearsAgo ? prDate : fiveYearsAgo;
+
+  // Calculate days in the eligibility window
+  const daysInWindow = Math.floor(
+    (today.getTime() - eligibilityWindowStart.getTime()) /
+      (1000 * 60 * 60 * 24)
   );
 
   // Calculate pre-PR credit (max 365 days, each day counts as 0.5)
@@ -180,30 +189,39 @@ function calculateStaticEligibility(profile: Partial<UserProfile>): {
     preDaysCredit = Math.min(Math.floor(totalPrePRDays * 0.5), 365);
   }
 
-  // Calculate absence days (only past absences)
+  // Calculate absence days (only absences within the 5-year window)
   let totalAbsenceDays = 0;
   if (profile.travelAbsences && profile.travelAbsences.length > 0) {
     totalAbsenceDays = profile.travelAbsences
       .filter((absence: AbsenceEntry) => {
+        const fromDate = timestampToDate(absence.from);
         const toDate = timestampToDate(absence.to);
-        return toDate <= today;
+        // Only count absences that overlap with the eligibility window
+        return toDate >= eligibilityWindowStart && fromDate <= today;
       })
       .reduce((total: number, absence: AbsenceEntry) => {
         const from = timestampToDate(absence.from);
         const to = timestampToDate(absence.to);
 
+        // Clamp absence to the eligibility window
+        const effectiveFrom =
+          from < eligibilityWindowStart ? eligibilityWindowStart : from;
+        const effectiveTo = to > today ? today : to;
+
         // Only count full days outside (exclude departure and return days)
         const days = Math.max(
           0,
-          Math.floor((to.getTime() - from.getTime()) / (1000 * 60 * 60 * 24)) -
-            1
+          Math.floor(
+            (effectiveTo.getTime() - effectiveFrom.getTime()) /
+              (1000 * 60 * 60 * 24)
+          ) - 1
         );
         return total + days;
       }, 0);
   }
 
-  // Calculate days in Canada as PR (excluding absences)
-  const daysInCanadaAsPR = Math.max(0, daysSincePR - totalAbsenceDays);
+  // Calculate days in Canada as PR within the eligibility window
+  const daysInCanadaAsPR = Math.max(0, daysInWindow - totalAbsenceDays);
 
   // Calculate total eligible days
   const totalEligibleDays = daysInCanadaAsPR + preDaysCredit;
