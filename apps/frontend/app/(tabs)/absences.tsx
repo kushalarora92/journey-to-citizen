@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { StyleSheet, ScrollView } from 'react-native';
 import { View, Text, VStack, HStack } from '@gluestack-ui/themed';
 import { useAuth } from '@/context/AuthContext';
@@ -23,17 +23,32 @@ export default function AbsencesScreen() {
 
   const absences = userProfile?.travelAbsences || [];
   
-  // Separate past and future trips
-  const now = new Date();
-  const pastTrips = absences.filter(absence => {
-    const toDate = absence.to ? new Date(absence.to) : null;
-    return toDate && toDate < now;
-  });
-  
-  const upcomingTrips = absences.filter(absence => {
-    const fromDate = absence.from ? new Date(absence.from) : null;
-    return fromDate && fromDate > now;
-  });
+  // Separate past, current, and future trips - use useMemo to recalculate when absences change
+  const { pastTrips, currentTrips, upcomingTrips } = useMemo(() => {
+    const now = new Date();
+    now.setHours(0, 0, 0, 0); // Reset to start of day for accurate comparison
+    
+    const past = absences.filter(absence => {
+      if (!absence.from || !absence.to) return false;
+      const toDate = new Date(absence.to + 'T00:00:00.000Z');
+      return toDate < now; // Ended before today
+    });
+    
+    const current = absences.filter(absence => {
+      if (!absence.from || !absence.to) return false;
+      const fromDate = new Date(absence.from + 'T00:00:00.000Z');
+      const toDate = new Date(absence.to + 'T00:00:00.000Z');
+      return fromDate <= now && toDate >= now; // Started on/before today AND ends on/after today
+    });
+    
+    const upcoming = absences.filter(absence => {
+      if (!absence.from) return false;
+      const fromDate = new Date(absence.from + 'T00:00:00.000Z');
+      return fromDate > now; // Starts after today
+    });
+    
+    return { pastTrips: past, currentTrips: current, upcomingTrips: upcoming };
+  }, [absences]);
 
   // Handlers for absence entries
   const handleAddAbsence = async (entry: Omit<DateRangeEntry, 'id'>) => {
@@ -119,6 +134,18 @@ export default function AbsencesScreen() {
             </HStack>
           </View>
 
+          {/* Current Trip Alert */}
+          {currentTrips.length > 0 && (
+            <View style={styles.currentCard}>
+              <HStack space="sm" alignItems="center">
+                <FontAwesome name="plane" size={18} color="#10b981" />
+                <Text style={styles.currentText}>
+                  You are currently on {currentTrips.length === 1 ? 'a trip' : `${currentTrips.length} trips`}
+                </Text>
+              </HStack>
+            </View>
+          )}
+
           {/* Upcoming Trips Alert */}
           {upcomingTrips.length > 0 && (
             <View style={styles.upcomingCard}>
@@ -137,7 +164,12 @@ export default function AbsencesScreen() {
               <HStack justifyContent="space-around">
                 <View style={styles.statItem}>
                   <Text style={styles.statValue}>{pastTrips.length}</Text>
-                  <Text style={styles.statLabel}>Past Trips</Text>
+                  <Text style={styles.statLabel}>Past</Text>
+                </View>
+                <View style={styles.statDivider} />
+                <View style={styles.statItem}>
+                  <Text style={styles.statValue}>{currentTrips.length}</Text>
+                  <Text style={styles.statLabel}>Current</Text>
                 </View>
                 <View style={styles.statDivider} />
                 <View style={styles.statItem}>
@@ -232,6 +264,18 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: '#475569',
     lineHeight: 20,
+  },
+  currentCard: {
+    backgroundColor: '#d1fae5',
+    padding: 14,
+    borderRadius: 10,
+    borderLeftWidth: 4,
+    borderLeftColor: '#10b981',
+  },
+  currentText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#065f46',
   },
   upcomingCard: {
     backgroundColor: '#fef3c7',
