@@ -65,8 +65,9 @@ export default function DateRangeList({
 
   const handleOpenAdd = () => {
     setEditingId(null);
-    setFromDate(null);
-    setToDate(null);
+    const today = new Date();
+    setFromDate(today);
+    setToDate(today);
     setAdditionalFields({});
     setShowDropdownFor(null);
     setIsModalVisible(true);
