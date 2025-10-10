@@ -41,16 +41,24 @@ const db = admin.firestore();
 // this will be the maximum concurrent request count.
 setGlobalOptions({maxInstances: 10});
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any, require-jsdoc
-function timestampToDate(timestamp: any): Date {
-  if (!timestamp) return new Date();
-  if (timestamp.toDate) {
-    return timestamp.toDate();
-  }
-  if (timestamp._seconds !== undefined) {
-    return new Date(timestamp._seconds * 1000);
-  }
-  return new Date(timestamp);
+/**
+ * Convert date string (YYYY-MM-DD) to Date object
+ *
+ * @param {string} dateString - ISO date string
+ * @return {Date} Date object
+ */
+function parseDate(dateString: string): Date {
+  return new Date(dateString + "T00:00:00.000Z");
+}
+
+/**
+ * Convert Date object to date string (YYYY-MM-DD)
+ *
+ * @param {Date} date - Date object
+ * @return {string} ISO date string
+ */
+function formatDate(date: Date): string {
+  return date.toISOString().split("T")[0];
 }
 
 /**
@@ -128,15 +136,7 @@ function updateEligibilityData(
 }
 
 /**
- * Calculate citizenship eligibility based on user profile
- * Returns static data that will be stored in Firestore
- *
- * Requirements:
- * - Must be physically present in Canada for 1095 days
- *   (3 years) in last 5 years
- * - Each day before PR counts as 0.5 days (max 365 days credit)
- * - Only full days outside Canada count as absences
- * - Day of departure and return count as days IN Canada
+ * Calculate static eligibility data that only changes when profile changes
  *
  * @param {UserProfile} profile - User profile data
  * @return {object} Static eligibility data to store in Firestore
@@ -146,7 +146,7 @@ function calculateStaticEligibility(profile: Partial<UserProfile>): {
     daysInCanadaAsPR: number;
     preDaysCredit: number;
     totalAbsenceDays: number;
-    earliestEligibilityDate: admin.firestore.Timestamp;
+    earliestEligibilityDate: string;
   } | null;
 } {
   if (!profile.prDate) {
@@ -154,7 +154,7 @@ function calculateStaticEligibility(profile: Partial<UserProfile>): {
   }
 
   const today = new Date();
-  const prDate = timestampToDate(profile.prDate);
+  const prDate = parseDate(profile.prDate);
 
   // Calculate 5-year eligibility window (citizenship requirement)
   // Only days in the last 5 years count towards citizenship
@@ -175,8 +175,8 @@ function calculateStaticEligibility(profile: Partial<UserProfile>): {
   if (profile.presenceInCanada && profile.presenceInCanada.length > 0) {
     const totalPrePRDays = profile.presenceInCanada.reduce(
       (total: number, entry: PresenceEntry) => {
-        const from = timestampToDate(entry.from);
-        const to = timestampToDate(entry.to);
+        const from = parseDate(entry.from);
+        const to = parseDate(entry.to);
         const days =
           Math.floor((to.getTime() - from.getTime()) / (1000 * 60 * 60 * 24)) +
           1;
@@ -194,14 +194,14 @@ function calculateStaticEligibility(profile: Partial<UserProfile>): {
   if (profile.travelAbsences && profile.travelAbsences.length > 0) {
     totalAbsenceDays = profile.travelAbsences
       .filter((absence: AbsenceEntry) => {
-        const fromDate = timestampToDate(absence.from);
-        const toDate = timestampToDate(absence.to);
+        const fromDate = parseDate(absence.from);
+        const toDate = parseDate(absence.to);
         // Only count absences that overlap with the eligibility window
         return toDate >= eligibilityWindowStart && fromDate <= today;
       })
       .reduce((total: number, absence: AbsenceEntry) => {
-        const from = timestampToDate(absence.from);
-        const to = timestampToDate(absence.to);
+        const from = parseDate(absence.from);
+        const to = parseDate(absence.to);
 
         // Clamp absence to the eligibility window
         const effectiveFrom =
@@ -245,7 +245,7 @@ function calculateStaticEligibility(profile: Partial<UserProfile>): {
       daysInCanadaAsPR,
       preDaysCredit,
       totalAbsenceDays,
-      earliestEligibilityDate: admin.firestore.Timestamp.fromDate(earliestDate),
+      earliestEligibilityDate: formatDate(earliestDate),
     },
   };
 }

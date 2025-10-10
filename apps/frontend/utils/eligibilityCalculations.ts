@@ -1,17 +1,10 @@
 import { UserProfile, EligibilityCalculation } from '@journey-to-citizen/types';
 
 /**
- * Helper function to convert Firestore Timestamp to Date
+ * Helper function to parse date string (YYYY-MM-DD) to Date
  */
-function timestampToDate(timestamp: any): Date {
-  if (!timestamp) return new Date();
-  if (timestamp.toDate) {
-    return timestamp.toDate();
-  }
-  if (timestamp._seconds !== undefined) {
-    return new Date(timestamp._seconds * 1000);
-  }
-  return new Date(timestamp);
+function parseDate(dateString: string): Date {
+  return new Date(dateString + 'T00:00:00.000Z');
 }
 
 /**
@@ -21,7 +14,7 @@ function timestampToDate(timestamp: any): Date {
  * - daysInCanadaAsPR: Days as PR minus absences (snapshot)
  * - preDaysCredit: Credit from pre-PR presence (max 365)
  * - totalAbsenceDays: Total days absent
- * - earliestEligibilityDate: When user becomes eligible
+ * - earliestEligibilityDate: When user becomes eligible (date string YYYY-MM-DD)
  * 
  * Frontend calculates dynamically (based on current date):
  * - daysRemaining: Days until eligibility
@@ -37,7 +30,7 @@ export function getEligibility(profile: UserProfile | null): EligibilityCalculat
     daysInCanadaAsPR: 0,
     preDaysCredit: 0,
     totalAbsenceDays: 0,
-    earliestEligibilityDate: null,
+    earliestEligibilityDate: '',
     totalEligibleDays: 0,
     daysRequired: DAYS_REQUIRED,
     daysRemaining: DAYS_REQUIRED,
@@ -58,10 +51,10 @@ export function getEligibility(profile: UserProfile | null): EligibilityCalculat
 
   const staticData = profile.staticEligibility;
   
-  // Convert earliest eligibility date from Firestore timestamp
+  // Convert earliest eligibility date from date string
   let earliestDate: Date | null = null;
   if (staticData.earliestEligibilityDate) {
-    earliestDate = timestampToDate(staticData.earliestEligibilityDate);
+    earliestDate = parseDate(staticData.earliestEligibilityDate);
   }
 
   // Calculate dynamic values based on current date

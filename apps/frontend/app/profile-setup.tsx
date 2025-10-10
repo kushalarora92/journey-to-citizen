@@ -72,7 +72,7 @@ export default function ProfileSetupScreen() {
       const result = await updateUserProfile({
         displayName: displayName.trim(),
         immigrationStatus: finalStatus,
-        prDate: prDate ? prDate.toISOString() : null,
+        prDate: prDate ? prDate.toISOString().split('T')[0] : undefined,
         profileComplete: true,
         presenceInCanada: [],
         travelAbsences: [],

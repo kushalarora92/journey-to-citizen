@@ -126,8 +126,8 @@ export default function DateRangeList({
     setIsSaving(true);
     try {
       const entryData = {
-        from: fromDate.toISOString(),
-        to: toDate.toISOString(),
+        from: fromDate.toISOString().split('T')[0], // Store as YYYY-MM-DD string
+        to: toDate.toISOString().split('T')[0], // Store as YYYY-MM-DD string
         ...additionalFields,
       };
 

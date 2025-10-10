@@ -97,7 +97,7 @@ export default function TabTwoScreen() {
 
     setIsSaving(true);
     try {
-      const result = await updateUserProfile({ prDate: editedPRDate.toISOString() });
+      const result = await updateUserProfile({ prDate: editedPRDate.toISOString().split('T')[0] });
       if (result.data) updateLocalProfile(result.data);
       const successMessage = 'PR date updated successfully!';
       Platform.OS === 'web' ? alert(successMessage) : Alert.alert('Success', successMessage);

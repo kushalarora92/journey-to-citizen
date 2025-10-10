@@ -49,7 +49,7 @@ export interface StaticEligibilityData {
   daysInCanadaAsPR: number; // Days as PR minus absences (snapshot at calculation time)
   preDaysCredit: number; // Credit from pre-PR presence (max 365 days)
   totalAbsenceDays: number; // Total days absent from Canada
-  earliestEligibilityDate: any; // Firestore Timestamp - when user becomes eligible
+  earliestEligibilityDate: string; // ISO date string (YYYY-MM-DD) - when user becomes eligible
 }
 
 /**
@@ -69,8 +69,8 @@ export interface EligibilityCalculation extends StaticEligibilityData {
  */
 export interface PresenceEntry {
   id: string;
-  from: any; // Firestore Timestamp
-  to: any; // Firestore Timestamp
+  from: string; // ISO date string (YYYY-MM-DD)
+  to: string; // ISO date string (YYYY-MM-DD)
   purpose: 'visitor' | 'study_permit' | 'work_permit' | 'protected_person' | 'business' | 'no_legal_status';
 }
 
@@ -79,8 +79,8 @@ export interface PresenceEntry {
  */
 export interface AbsenceEntry {
   id: string;
-  from: any; // Firestore Timestamp
-  to: any; // Firestore Timestamp
+  from: string; // ISO date string (YYYY-MM-DD)
+  to: string; // ISO date string (YYYY-MM-DD)
   place?: string;
 }
 
@@ -93,15 +93,15 @@ export interface UserProfile {
   displayName?: string | null;
   immigrationStatus?: 'visitor' | 'student' | 'worker' | 'permanent_resident';
   profileComplete?: boolean;
-  prDate?: any; // Firestore Timestamp
+  prDate?: string; // ISO date string (YYYY-MM-DD)
   presenceInCanada?: PresenceEntry[];
   travelAbsences?: AbsenceEntry[];
   
   // Backend-calculated static eligibility data (updated on profile changes)
   staticEligibility?: StaticEligibilityData;
   
-  createdAt?: any; // Firestore Timestamp
-  updatedAt?: any; // Firestore Timestamp
+  createdAt?: any; // Firestore Timestamp (keep for audit trail)
+  updatedAt?: any; // Firestore Timestamp (keep for audit trail)
 }
 
 /**
@@ -112,7 +112,7 @@ export interface UpdateProfileData {
   displayName?: string;
   immigrationStatus?: 'visitor' | 'student' | 'worker' | 'permanent_resident';
   profileComplete?: boolean;
-  prDate?: any;
+  prDate?: string; // ISO date string (YYYY-MM-DD)
   presenceInCanada?: PresenceEntry[];
   travelAbsences?: AbsenceEntry[];
   [key: string]: any; // Allow additional custom fields
