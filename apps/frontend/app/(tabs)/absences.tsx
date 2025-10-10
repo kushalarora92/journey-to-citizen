@@ -1,11 +1,15 @@
 import React, { useMemo } from 'react';
-import { StyleSheet, ScrollView } from 'react-native';
+import { StyleSheet, ScrollView, Alert, Platform } from 'react-native';
 import { View, Text, VStack, HStack } from '@gluestack-ui/themed';
 import { useAuth } from '@/context/AuthContext';
 import { useFirebaseFunctions } from '@/hooks/useFirebaseFunctions';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import DateRangeList, { DateRangeEntry } from '@/components/DateRangeList';
 import { AbsenceEntry } from '@journey-to-citizen/types';
+import { 
+  findOverlappingRanges, 
+  formatOverlappingRangesMessage 
+} from '@/utils/dateRangeValidation';
 
 export default function AbsencesScreen() {
   const { userProfile, profileLoading, updateLocalProfile } = useAuth();
@@ -54,6 +58,33 @@ export default function AbsencesScreen() {
   const handleAddAbsence = async (entry: Omit<DateRangeEntry, 'id'>) => {
     try {
       const currentAbsences = userProfile?.travelAbsences || [];
+      
+      // Check for overlaps and warn user (but allow them to continue)
+      const newRange = { from: entry.from, to: entry.to };
+      const overlapping = findOverlappingRanges(newRange, currentAbsences);
+      
+      if (overlapping.length > 0) {
+        // Overlapping dates - show warning and ask for confirmation
+        const message = `Note: This trip overlaps with existing trip(s):\n\n${formatOverlappingRangesMessage(overlapping)}\n\nDon't worry - overlapping days will only be counted once in your eligibility calculation.\n\nDo you want to add this trip?`;
+        
+        const shouldContinue = await new Promise<boolean>((resolve) => {
+          if (Platform.OS === 'web') {
+            resolve(confirm(message));
+          } else {
+            Alert.alert(
+              'Overlapping Dates Detected',
+              message,
+              [
+                { text: 'Cancel', style: 'cancel', onPress: () => resolve(false) },
+                { text: 'Add Trip', onPress: () => resolve(true) }
+              ]
+            );
+          }
+        });
+        
+        if (!shouldContinue) return;
+      }
+      
       const newEntry = {
         id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
         from: entry.from,

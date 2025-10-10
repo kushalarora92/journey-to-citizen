@@ -8,6 +8,10 @@ import { useAuth } from '@/context/AuthContext';
 import { useFirebaseFunctions } from '@/hooks/useFirebaseFunctions';
 import DateRangeList, { DateRangeEntry } from '@/components/DateRangeList';
 import { PresenceEntry, IMMIGRATION_STATUS_LABELS, PURPOSE_OF_STAY_LABELS } from '@journey-to-citizen/types';
+import { 
+  findOverlappingRanges, 
+  formatOverlappingRangesMessage 
+} from '@/utils/dateRangeValidation';
 
 export default function TabTwoScreen() {
   const { user, userProfile, profileLoading, sendVerificationEmail, updateLocalProfile } = useAuth();
@@ -122,6 +126,33 @@ export default function TabTwoScreen() {
   const handleAddPresence = async (entry: Omit<DateRangeEntry, 'id'>) => {
     try {
       const currentPresence = userProfile?.presenceInCanada || [];
+      
+      // Check for overlaps and warn user (but allow them to continue)
+      const newRange = { from: entry.from, to: entry.to };
+      const overlapping = findOverlappingRanges(newRange, currentPresence);
+      
+      if (overlapping.length > 0) {
+        // Overlapping dates - show warning and ask for confirmation
+        const message = `Note: This period overlaps with existing presence entry(s):\n\n${formatOverlappingRangesMessage(overlapping)}\n\nDon't worry - overlapping days will only be counted once in your eligibility calculation.\n\nDo you want to add this entry?`;
+        
+        const shouldContinue = await new Promise<boolean>((resolve) => {
+          if (Platform.OS === 'web') {
+            resolve(confirm(message));
+          } else {
+            Alert.alert(
+              'Overlapping Dates Detected',
+              message,
+              [
+                { text: 'Cancel', style: 'cancel', onPress: () => resolve(false) },
+                { text: 'Add Entry', onPress: () => resolve(true) }
+              ]
+            );
+          }
+        });
+        
+        if (!shouldContinue) return;
+      }
+      
       const newEntry = {
         id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
         from: entry.from,

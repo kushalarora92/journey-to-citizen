@@ -16,7 +16,6 @@ import {
   UserProfile,
   UpdateProfileData,
   ApiResponse,
-  PresenceEntry,
   AbsenceEntry,
 } from "@journey-to-citizen/types";
 
@@ -59,6 +58,53 @@ function parseDate(dateString: string): Date {
  */
 function formatDate(date: Date): string {
   return date.toISOString().split("T")[0];
+}
+
+/**
+ * Merge overlapping date ranges to prevent double-counting
+ * Sorts ranges by start date and merges overlapping/adjacent ranges
+ *
+ * @param {Array<{from: string, to: string}>} ranges - Date ranges to merge
+ * @return {Array<{from: string, to: string}>} Merged non-overlapping ranges
+ */
+function mergeOverlappingDateRanges(
+  ranges: Array<{from: string; to: string}>
+): Array<{from: string; to: string}> {
+  if (ranges.length === 0) return [];
+
+  // Sort by start date
+  const sorted = [...ranges].sort((a, b) => {
+    return parseDate(a.from).getTime() - parseDate(b.from).getTime();
+  });
+
+  const merged: Array<{from: string; to: string}> = [sorted[0]];
+
+  for (let i = 1; i < sorted.length; i++) {
+    const current = sorted[i];
+    const last = merged[merged.length - 1];
+
+    const currentStart = parseDate(current.from);
+    const currentEnd = parseDate(current.to);
+    const lastEnd = parseDate(last.to);
+
+    // Check if current range overlaps or is adjacent to last merged range
+    // Adjacent means they touch (lastEnd + 1 day === currentStart)
+    const oneDayAfterLast = new Date(lastEnd);
+    oneDayAfterLast.setDate(oneDayAfterLast.getDate() + 1);
+
+    if (currentStart <= oneDayAfterLast) {
+      // Overlapping or adjacent - merge by extending the end date
+      if (currentEnd > lastEnd) {
+        last.to = current.to;
+      }
+      // else current is completely contained in last, no change needed
+    } else {
+      // No overlap - add as new range
+      merged.push(current);
+    }
+  }
+
+  return merged;
 }
 
 /**
@@ -173,8 +219,11 @@ function calculateStaticEligibility(profile: Partial<UserProfile>): {
   // Calculate pre-PR credit (max 365 days, each day counts as 0.5)
   let preDaysCredit = 0;
   if (profile.presenceInCanada && profile.presenceInCanada.length > 0) {
-    const totalPrePRDays = profile.presenceInCanada.reduce(
-      (total: number, entry: PresenceEntry) => {
+    // Merge overlapping presence entries to prevent double-counting
+    const mergedPresence = mergeOverlappingDateRanges(profile.presenceInCanada);
+    
+    const totalPrePRDays = mergedPresence.reduce(
+      (total: number, entry: {from: string; to: string}) => {
         const from = parseDate(entry.from);
         const to = parseDate(entry.to);
         const days =
@@ -192,14 +241,24 @@ function calculateStaticEligibility(profile: Partial<UserProfile>): {
   // Calculate absence days (only absences within the 5-year window)
   let totalAbsenceDays = 0;
   if (profile.travelAbsences && profile.travelAbsences.length > 0) {
-    totalAbsenceDays = profile.travelAbsences
+    // First, filter absences that overlap with eligibility window
+    const relevantAbsences = profile.travelAbsences
       .filter((absence: AbsenceEntry) => {
         const fromDate = parseDate(absence.from);
         const toDate = parseDate(absence.to);
         // Only count absences that overlap with the eligibility window
         return toDate >= eligibilityWindowStart && fromDate <= today;
       })
-      .reduce((total: number, absence: AbsenceEntry) => {
+      .map((absence: AbsenceEntry) => ({
+        from: absence.from,
+        to: absence.to,
+      }));
+
+    // Merge overlapping absences to prevent double-counting
+    const mergedAbsences = mergeOverlappingDateRanges(relevantAbsences);
+
+    totalAbsenceDays = mergedAbsences.reduce(
+      (total: number, absence: {from: string; to: string}) => {
         const from = parseDate(absence.from);
         const to = parseDate(absence.to);
 
@@ -217,7 +276,9 @@ function calculateStaticEligibility(profile: Partial<UserProfile>): {
           ) - 1
         );
         return total + days;
-      }, 0);
+      },
+      0
+    );
   }
 
   // Calculate days in Canada as PR within the eligibility window
