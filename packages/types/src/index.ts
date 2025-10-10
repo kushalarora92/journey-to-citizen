@@ -46,7 +46,7 @@ export const PURPOSE_OF_STAY_LABELS: Record<string, string> = {
  * These values are stored in Firestore and only change when profile is updated
  */
 export interface StaticEligibilityData {
-  daysInCanadaAsPR: number; // Days as PR minus absences (snapshot at calculation time)
+  daysInCanadaAsPR: number; // Raw days as PR (NOT reduced by absences)
   preDaysCredit: number; // Credit from pre-PR presence (max 365 days)
   totalAbsenceDays: number; // Total days absent from Canada
   earliestEligibilityDate: string; // ISO date string (YYYY-MM-DD) - when user becomes eligible
@@ -57,7 +57,7 @@ export interface StaticEligibilityData {
  * Combines static backend data with dynamic frontend calculations
  */
 export interface EligibilityCalculation extends StaticEligibilityData {
-  totalEligibleDays: number; // daysInCanadaAsPR + preDaysCredit (calculated from static data)
+  totalEligibleDays: number; // daysInCanadaAsPR + preDaysCredit - totalAbsenceDays
   daysRequired: number; // Always 1095 (3 years)
   daysRemaining: number; // Calculated dynamically in frontend based on current date
   isEligible: boolean; // Calculated dynamically: today >= earliestEligibilityDate

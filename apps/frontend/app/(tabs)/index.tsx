@@ -177,12 +177,16 @@ export default function TabOneScreen() {
               <FontAwesome name="calculator" size={14} /> How We Calculate
             </Text>
             <View style={styles.calculationRow}>
-              <Text style={styles.calculationLabel}>Days in Canada as PR:</Text>
+              <Text style={styles.calculationLabel}>+ Days as PR:</Text>
               <Text style={styles.calculationValue}>{eligibility.daysInCanadaAsPR}</Text>
             </View>
             <View style={styles.calculationRow}>
               <Text style={styles.calculationLabel}>+ Pre-PR credit (max 365):</Text>
               <Text style={styles.calculationValue}>+{eligibility.preDaysCredit}</Text>
+            </View>
+            <View style={styles.calculationRow}>
+              <Text style={styles.calculationLabel}>- Absence days:</Text>
+              <Text style={styles.calculationValue}>-{eligibility.totalAbsenceDays}</Text>
             </View>
             <View style={styles.calculationDivider} />
             <View style={styles.calculationRow}>
@@ -191,7 +195,7 @@ export default function TabOneScreen() {
             </View>
             
             <Text style={styles.calculationNote}>
-              Note: Only the last 5 years count toward citizenship eligibility. Each day before PR counts as 0.5 days (max 365). Absence days are excluded.
+              Note: Only the last 5 years count toward citizenship eligibility. Each day before PR counts as 0.5 days (max 365). Departure and return days count as present in Canada.
             </Text>
           </View>
 
@@ -468,6 +472,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     paddingVertical: 6,
+    backgroundColor: 'transparent',
   },
   calculationLabel: {
     fontSize: 14,

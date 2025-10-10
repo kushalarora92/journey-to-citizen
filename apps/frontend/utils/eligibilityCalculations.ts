@@ -59,7 +59,7 @@ export function getEligibility(profile: UserProfile | null): EligibilityCalculat
 
   // Calculate dynamic values based on current date
   const today = new Date();
-  const totalEligibleDays = staticData.daysInCanadaAsPR + staticData.preDaysCredit;
+  const totalEligibleDays = staticData.daysInCanadaAsPR + staticData.preDaysCredit - staticData.totalAbsenceDays;
   
   // Calculate days remaining until eligibility
   let daysRemaining = 0;

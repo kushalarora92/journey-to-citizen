@@ -221,7 +221,7 @@ function calculateStaticEligibility(profile: Partial<UserProfile>): {
   if (profile.presenceInCanada && profile.presenceInCanada.length > 0) {
     // Merge overlapping presence entries to prevent double-counting
     const mergedPresence = mergeOverlappingDateRanges(profile.presenceInCanada);
-    
+
     const totalPrePRDays = mergedPresence.reduce(
       (total: number, entry: {from: string; to: string}) => {
         const from = parseDate(entry.from);
@@ -281,11 +281,11 @@ function calculateStaticEligibility(profile: Partial<UserProfile>): {
     );
   }
 
-  // Calculate days in Canada as PR within the eligibility window
-  const daysInCanadaAsPR = Math.max(0, daysInWindow - totalAbsenceDays);
+  // Days as PR = raw days in the eligibility window
+  const daysInCanadaAsPR = daysInWindow;
 
-  // Calculate total eligible days
-  const totalEligibleDays = daysInCanadaAsPR + preDaysCredit;
+  // Calculate total eligible days (raw PR days + credit - absences)
+  const totalEligibleDays = daysInCanadaAsPR + preDaysCredit - totalAbsenceDays;
   const daysRequired = 1095;
   const daysRemaining = Math.max(0, daysRequired - totalEligibleDays);
 
