@@ -30,6 +30,7 @@ interface DateRangeListProps {
   startDateNote?: string;
   endDateLabel?: string;
   endDateNote?: string;
+  showAbsentDays?: boolean; // Whether to show absent days calculation (for travel absences)
 }
 
 export default function DateRangeList({
@@ -45,6 +46,7 @@ export default function DateRangeList({
   startDateNote,
   endDateLabel = 'End Date',
   endDateNote,
+  showAbsentDays = false,
 }: DateRangeListProps) {
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -69,11 +71,19 @@ export default function DateRangeList({
 
   const calculateDays = (from: any, to: any): number => {
     if (!from || !to) return 0;
-    const fromD = from instanceof Date ? from : new Date(from);
-    const toD = to instanceof Date ? to : new Date(to);
+    const fromD = from instanceof Date ? from : new Date(from + 'T00:00:00.000Z');
+    const toD = to instanceof Date ? to : new Date(to + 'T00:00:00.000Z');
     const diffTime = Math.abs(toD.getTime() - fromD.getTime());
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
     return diffDays + 1; // Include both start and end dates
+  };
+
+  const calculateAbsentDays = (from: any, to: any): number => {
+    if (!from || !to) return 0;
+    const totalDays = calculateDays(from, to);
+    // Absent days = total days - 2 (exclude departure and return days)
+    // Minimum 0 for same-day or next-day trips
+    return Math.max(0, totalDays - 2);
   };
 
   const handleOpenAdd = () => {
@@ -205,7 +215,15 @@ export default function DateRangeList({
                     {formatDate(entry.from)} → {formatDate(entry.to)}
                   </Text>
                   <Text size="xs" color="$textLight600">
-                    {calculateDays(entry.from, entry.to)} days
+                    {showAbsentDays ? (
+                      <>
+                        {calculateDays(entry.from, entry.to)} days • {calculateAbsentDays(entry.from, entry.to)} days absent
+                      </>
+                    ) : (
+                      <>
+                        {calculateDays(entry.from, entry.to)} days
+                      </>
+                    )}
                     {fields.map(field => 
                       entry[field.name] ? ` • ${entry[field.name]}` : ''
                     ).join('')}

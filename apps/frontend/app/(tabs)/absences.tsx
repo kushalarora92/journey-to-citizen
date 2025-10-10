@@ -239,6 +239,7 @@ export default function AbsencesScreen() {
               startDateNote="Day you departed from Canada (day included)"
               endDateLabel="Return Date"
               endDateNote="Day you arrived back in Canada (day included)"
+              showAbsentDays={true}
             />
           </View>
 
