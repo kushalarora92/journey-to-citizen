@@ -404,6 +404,10 @@ export default function TabTwoScreen() {
                 },
               ]}
               allowFutureDates={false}
+              startDateLabel="Start Date"
+              startDateNote="Day you landed/arrived in Canada (day included)"
+              endDateLabel="End Date"
+              endDateNote="Day you left/traveled back from Canada (day included). Could also be your PR date minus 1 day."
             />
             
             <View style={styles.noteBox}>

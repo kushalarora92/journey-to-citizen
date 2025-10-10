@@ -26,6 +26,10 @@ interface DateRangeListProps {
     required?: boolean;
   }[];
   allowFutureDates?: boolean;
+  startDateLabel?: string;
+  startDateNote?: string;
+  endDateLabel?: string;
+  endDateNote?: string;
 }
 
 export default function DateRangeList({
@@ -37,6 +41,10 @@ export default function DateRangeList({
   emptyMessage,
   fields = [],
   allowFutureDates = false,
+  startDateLabel = 'Start Date',
+  startDateNote,
+  endDateLabel = 'End Date',
+  endDateNote,
 }: DateRangeListProps) {
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -230,7 +238,12 @@ export default function DateRangeList({
               <VStack space="md">
                 {/* From Date */}
                 <View>
-                  <Text size="sm" fontWeight="$medium" mb="$2">Start Date *</Text>
+                  <Text size="sm" fontWeight="$medium" mb={endDateNote ? 0 : "$2"}>{startDateLabel} *</Text>
+                  {startDateNote && (
+                    <Text size="xs" color="$textLight600" mb="$2" style={{ fontStyle: 'italic' }}>
+                      {startDateNote}
+                    </Text>
+                  )}
                   <TouchableOpacity
                     onPress={() => setShowFromPicker(!showFromPicker)}
                     style={styles.dateButton}
@@ -262,7 +275,12 @@ export default function DateRangeList({
 
                 {/* To Date */}
                 <View>
-                  <Text size="sm" fontWeight="$medium" mb="$2">End Date *</Text>
+                  <Text size="sm" fontWeight="$medium" mb={endDateNote ? 0 : "$2"}>{endDateLabel} *</Text>
+                  {endDateNote && (
+                    <Text size="xs" color="$textLight600" mb="$2" style={{ fontStyle: 'italic' }}>
+                      {endDateNote}
+                    </Text>
+                  )}
                   <TouchableOpacity
                     onPress={() => setShowToPicker(!showToPicker)}
                     style={styles.dateButton}
