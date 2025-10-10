@@ -123,7 +123,7 @@ export default function TabTwoScreen() {
     try {
       const currentPresence = userProfile?.presenceInCanada || [];
       const newEntry = {
-        id: Date.now().toString(),
+        id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
         from: entry.from,
         to: entry.to,
         purpose: (entry as any).purpose || 'visitor',

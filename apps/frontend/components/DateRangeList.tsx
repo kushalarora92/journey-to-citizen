@@ -117,8 +117,8 @@ export default function DateRangeList({
     }
 
     if (fromDate > toDate) {
-      const message = 'Start date must be before end date';
-      Platform.OS === 'web' ? alert(message) : Alert.alert('Invalid', message);
+      const message = 'Departure date must be before or equal to return date';
+      Platform.OS === 'web' ? alert(message) : Alert.alert('Invalid Date Order', message);
       return;
     }
 

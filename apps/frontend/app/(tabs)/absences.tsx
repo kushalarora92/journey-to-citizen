@@ -55,7 +55,7 @@ export default function AbsencesScreen() {
     try {
       const currentAbsences = userProfile?.travelAbsences || [];
       const newEntry = {
-        id: Date.now().toString(),
+        id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
         from: entry.from,
         to: entry.to,
         place: (entry as any).place || '',
