@@ -144,7 +144,7 @@ export default function TabOneScreen() {
               </Text>
               {!eligibility.isEligible && (
                 <Text style={styles.progressRemaining}>
-                  {formatDaysRemaining(eligibility.daysRemaining)} remaining
+                  {formatDaysRemaining(eligibility.daysRemaining)} left
                 </Text>
               )}
             </View>
@@ -417,15 +417,20 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    flexWrap: 'wrap',
+    gap: 4,
+    rowGap: 2,
   },
   progressDays: {
     fontSize: 14,
     fontWeight: '600',
     color: '#475569',
+    flexShrink: 0,
   },
   progressRemaining: {
     fontSize: 13,
     color: '#64748b',
+    flexShrink: 1,
   },
   statsGrid: {
     flexDirection: 'row',
