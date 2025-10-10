@@ -58,8 +58,13 @@ export default function DateRangeList({
 
   const formatDate = (date: any): string => {
     if (!date) return 'N/A';
-    const d = date instanceof Date ? date : new Date(date);
-    return d.toLocaleDateString('en-CA'); // YYYY-MM-DD format
+    const d = date instanceof Date ? date : new Date(date + 'T00:00:00.000Z');
+    return d.toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      timeZone: 'UTC'
+    }); // Sep 15, 2024 format
   };
 
   const calculateDays = (from: any, to: any): number => {

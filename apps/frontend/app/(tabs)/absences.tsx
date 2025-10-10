@@ -8,7 +8,8 @@ import DateRangeList, { DateRangeEntry } from '@/components/DateRangeList';
 import { AbsenceEntry } from '@journey-to-citizen/types';
 import { 
   findOverlappingRanges, 
-  formatOverlappingRangesMessage 
+  formatOverlappingRangesMessage,
+  formatDateForDisplay 
 } from '@/utils/dateRangeValidation';
 
 export default function AbsencesScreen() {

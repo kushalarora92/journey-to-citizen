@@ -10,7 +10,8 @@ import DateRangeList, { DateRangeEntry } from '@/components/DateRangeList';
 import { PresenceEntry, IMMIGRATION_STATUS_LABELS, PURPOSE_OF_STAY_LABELS } from '@journey-to-citizen/types';
 import { 
   findOverlappingRanges, 
-  formatOverlappingRangesMessage 
+  formatOverlappingRangesMessage,
+  formatDateForDisplay 
 } from '@/utils/dateRangeValidation';
 
 export default function TabTwoScreen() {
@@ -118,8 +119,13 @@ export default function TabTwoScreen() {
 
   const formatDate = (date: any): string => {
     if (!date) return 'Not set';
-    const d = date instanceof Date ? date : new Date(date);
-    return d.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+    const d = date instanceof Date ? date : new Date(date + 'T00:00:00.000Z');
+    return d.toLocaleDateString('en-US', { 
+      year: 'numeric', 
+      month: 'short', 
+      day: 'numeric',
+      timeZone: 'UTC'
+    });
   };
 
   // Handlers for presence entries

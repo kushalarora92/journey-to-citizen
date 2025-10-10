@@ -63,8 +63,9 @@ export function formatOverlappingRangesMessage(ranges: DateRange[]): string {
 
 /**
  * Format date string for user-friendly display
+ * Returns format like "Sep 15, 2024"
  */
-function formatDateForDisplay(dateString: string): string {
+export function formatDateForDisplay(dateString: string): string {
   const date = new Date(dateString + 'T00:00:00.000Z');
   return date.toLocaleDateString('en-US', {
     year: 'numeric',
