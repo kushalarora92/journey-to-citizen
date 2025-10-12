@@ -283,15 +283,39 @@ export default function DateRangeList({
                         mode="date"
                         display={Platform.OS === 'ios' ? 'spinner' : 'default'}
                         onChange={(event, date) => {
-                          if (event.type === 'set' && date) {
-                            setFromDate(date);
-                            setShowFromPicker(false);
-                          } else if (event.type === 'dismissed') {
-                            setShowFromPicker(false);
+                          if (Platform.OS === 'ios') {
+                            // On iOS, update state but keep picker open
+                            if (date) setFromDate(date);
+                          } else {
+                            // On Android, close after selection
+                            if (event.type === 'set' && date) {
+                              setFromDate(date);
+                              setShowFromPicker(false);
+                            } else if (event.type === 'dismissed') {
+                              setShowFromPicker(false);
+                            }
                           }
                         }}
                         maximumDate={allowFutureDates ? undefined : new Date()}
                       />
+                      {/* 
+                        iOS-specific Done button (Bug fix: 2025-10-11)
+                        iOS UIDatePicker in spinner mode fires onChange continuously as user scrolls.
+                        Without this button, picker would close after each component change (month/day/year),
+                        requiring users to reopen it multiple times. This Done button matches native iOS
+                        behavior and improves UX by keeping picker open until user explicitly confirms.
+                        See: docs/7.bug-fixes/2025-10-11_datepicker-closes-immediately.md
+                      */}
+                      {Platform.OS === 'ios' && (
+                        <Button
+                          action="primary"
+                          size="sm"
+                          onPress={() => setShowFromPicker(false)}
+                          style={{ marginTop: 8 }}
+                        >
+                          <ButtonText>Done</ButtonText>
+                        </Button>
+                      )}
                     </View>
                   )}
                 </View>
@@ -320,15 +344,32 @@ export default function DateRangeList({
                         mode="date"
                         display={Platform.OS === 'ios' ? 'spinner' : 'default'}
                         onChange={(event, date) => {
-                          if (event.type === 'set' && date) {
-                            setToDate(date);
-                            setShowToPicker(false);
-                          } else if (event.type === 'dismissed') {
-                            setShowToPicker(false);
+                          if (Platform.OS === 'ios') {
+                            // On iOS, update state but keep picker open
+                            if (date) setToDate(date);
+                          } else {
+                            // On Android, close after selection
+                            if (event.type === 'set' && date) {
+                              setToDate(date);
+                              setShowToPicker(false);
+                            } else if (event.type === 'dismissed') {
+                              setShowToPicker(false);
+                            }
                           }
                         }}
                         maximumDate={allowFutureDates ? undefined : new Date()}
                       />
+                      {/* iOS-specific Done button - see comment on fromDate picker above */}
+                      {Platform.OS === 'ios' && (
+                        <Button
+                          action="primary"
+                          size="sm"
+                          onPress={() => setShowToPicker(false)}
+                          style={{ marginTop: 8 }}
+                        >
+                          <ButtonText>Done</ButtonText>
+                        </Button>
+                      )}
                     </View>
                   )}
                 </View>

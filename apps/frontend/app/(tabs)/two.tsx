@@ -376,18 +376,40 @@ export default function TabTwoScreen() {
                   </Text>
                 </TouchableOpacity>
                 {showPRDatePicker && (
-                  <DateTimePicker
-                    value={editedPRDate || new Date()}
-                    mode="date"
-                    display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-                    onChange={(event, date) => {
-                      setShowPRDatePicker(false);
-                      if (date && event.type !== 'dismissed') {
-                        setEditedPRDate(date);
-                      }
-                    }}
-                    maximumDate={new Date()}
-                  />
+                  <View>
+                    <DateTimePicker
+                      value={editedPRDate || new Date()}
+                      mode="date"
+                      display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                      onChange={(event, date) => {
+                        if (Platform.OS === 'ios') {
+                          // On iOS, update state but keep picker open
+                          if (date) setEditedPRDate(date);
+                        } else {
+                          // On Android, close after selection
+                          setShowPRDatePicker(false);
+                          if (date && event.type !== 'dismissed') {
+                            setEditedPRDate(date);
+                          }
+                        }
+                      }}
+                      maximumDate={new Date()}
+                    />
+                    {/* 
+                      iOS-specific Done button (Bug fix: 2025-10-11)
+                      Keeps picker open until user confirms, preventing it from closing
+                      after each month/day/year change. Matches native iOS picker behavior.
+                      See: docs/7.bug-fixes/2025-10-11_datepicker-closes-immediately.md
+                    */}
+                    {Platform.OS === 'ios' && (
+                      <TouchableOpacity
+                        style={[styles.button, styles.saveButton, { marginTop: 8 }]}
+                        onPress={() => setShowPRDatePicker(false)}
+                      >
+                        <Text style={styles.saveButtonText}>Done</Text>
+                      </TouchableOpacity>
+                    )}
+                  </View>
                 )}
                 <View style={styles.editButtons}>
                   <TouchableOpacity
