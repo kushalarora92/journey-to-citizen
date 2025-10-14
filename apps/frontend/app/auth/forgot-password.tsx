@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { KeyboardAvoidingView, Platform, ScrollView, Alert } from 'react-native';
 import { useAuth } from '@/context/AuthContext';
 import { router } from 'expo-router';
+import { AuthBranding } from '@/components/AuthBranding';
 import {
   Box,
   VStack,
@@ -85,7 +86,8 @@ export default function ForgotPasswordScreen() {
         keyboardShouldPersistTaps="handled"
       >
         <Box flex={1} bg="$background" p="$6" justifyContent="center">
-          <VStack space="lg" maxWidth={400} width="100%" alignSelf="center">
+          <VStack space="lg" maxWidth={400} width="100%" alignSelf="center" gap={"$8"}>
+            <AuthBranding />
             <VStack space="md">
               <Heading size="2xl">Reset Password</Heading>
               <Text size="md" color="$textLight600">

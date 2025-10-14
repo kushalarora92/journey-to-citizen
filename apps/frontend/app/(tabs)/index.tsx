@@ -29,7 +29,7 @@ export default function TabOneScreen() {
     <ScrollView style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-        <Text style={styles.greeting}>Welcome back!</Text>
+        <Text style={styles.greeting}>Welcome, eh!</Text>
         <Text style={styles.name}>
           {profileLoading ? '...' : displayName} 👋
         </Text>

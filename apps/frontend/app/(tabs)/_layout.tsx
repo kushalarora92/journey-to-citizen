@@ -1,7 +1,7 @@
 import React from 'react';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { Link, Tabs } from 'expo-router';
-import { Pressable, Alert, Platform } from 'react-native';
+import { Pressable, Alert, Platform, Image, View } from 'react-native';
 
 import Colors from '@/constants/Colors';
 import { useColorScheme } from '@/components/useColorScheme';
@@ -14,6 +14,17 @@ function TabBarIcon(props: {
   color: string;
 }) {
   return <FontAwesome size={28} style={{ marginBottom: -3 }} {...props} />;
+}
+
+// Custom header logo component for headerLeft
+function HeaderLogo() {
+  return (
+    <Image
+      source={require('../../assets/images/logo.png')}
+      style={{ width: 70, height: 40 }}
+      resizeMode="contain"
+    />
+  );
 }
 
 export default function TabLayout() {
@@ -58,11 +69,13 @@ export default function TabLayout() {
         // Disable the static render of the header on web
         // to prevent a hydration error in React Navigation v6.
         headerShown: useClientOnlyValue(false, true),
+        headerTitleAlign: 'center',
       }}>
       <Tabs.Screen
         name="index"
         options={{
           title: 'Dashboard',
+          headerLeft: () => <HeaderLogo />,
           tabBarIcon: ({ color }) => <TabBarIcon name="home" color={color} />,
           headerRight: () => (
             <Pressable onPress={handleLogout}>
@@ -82,6 +95,7 @@ export default function TabLayout() {
         name="absences"
         options={{
           title: 'Travel',
+          headerLeft: () => <HeaderLogo />,
           tabBarIcon: ({ color }) => <TabBarIcon name="plane" color={color} />,
           headerRight: () => (
             <Pressable onPress={handleLogout}>
@@ -101,6 +115,7 @@ export default function TabLayout() {
         name="two"
         options={{
           title: 'Profile',
+          headerLeft: () => <HeaderLogo />,
           tabBarIcon: ({ color }) => <TabBarIcon name="user" color={color} />,
           headerRight: () => (
             <Pressable onPress={handleLogout}>

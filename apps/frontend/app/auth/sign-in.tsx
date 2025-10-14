@@ -19,6 +19,7 @@ import {
   Link,
   LinkText,
 } from '@gluestack-ui/themed';
+import { AuthBranding } from '@/components/AuthBranding';
 
 export default function SignInScreen() {
   const [email, setEmail] = useState('');
@@ -75,13 +76,18 @@ export default function SignInScreen() {
         keyboardShouldPersistTaps="handled"
       >
         <Box flex={1} bg="$background" p="$6" justifyContent="center">
-          <VStack space="lg" maxWidth={400} width="100%" alignSelf="center">
-            <VStack space="md">
+          <VStack space="lg" maxWidth={400} width="100%" alignSelf="center" gap="$8">
+            {/* App Branding */}
+            {/* <Box pb="$4"> */}
+            <AuthBranding showTitle={true} showTagline={true} />
+            {/* </Box> */}
+
+            {/* <VStack space="md">
               <Heading size="2xl">Welcome Back</Heading>
               <Text size="md" color="$textLight600">
                 Sign in to continue your citizenship journey
               </Text>
-            </VStack>
+            </VStack> */}
 
             <VStack space="xl">
               <FormControl isInvalid={!!error}>

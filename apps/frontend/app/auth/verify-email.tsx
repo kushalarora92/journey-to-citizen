@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Alert, Platform } from 'react-native';
 import { useAuth } from '@/context/AuthContext';
 import { router } from 'expo-router';
+import { AuthBranding } from '@/components/AuthBranding';
 import {
   Box,
   VStack,
@@ -120,7 +121,8 @@ export default function VerifyEmailScreen() {
 
   return (
     <Box flex={1} bg="$background" p="$6" justifyContent="center">
-      <VStack space="lg" maxWidth={400} width="100%" alignSelf="center">
+      <VStack space="lg" maxWidth={400} width="100%" alignSelf="center" gap={"$8"}>
+        <AuthBranding />
         <VStack space="md" alignItems="center">
           <Box
             w={80}
