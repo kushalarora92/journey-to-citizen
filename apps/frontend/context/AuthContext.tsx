@@ -10,6 +10,7 @@ import {
 } from 'firebase/auth';
 import { auth } from '@/config/firebase';
 import { useFirebaseFunctions } from '@/hooks/useFirebaseFunctions';
+import { useAnalytics } from '@/hooks/useAnalytics';
 import { UserProfile } from '@journey-to-citizen/types';
 
 interface AuthContextType {
@@ -43,6 +44,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [loading, setLoading] = useState(true);
   const [profileLoading, setProfileLoading] = useState(false);
   const { getUserInfo } = useFirebaseFunctions();
+  const { setAnalyticsUserId, setAnalyticsUserProperties, trackEvent } = useAnalytics();
 
   // Fetch user profile from Firestore
   const fetchUserProfile = async (currentUser: User) => {
@@ -73,6 +75,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       try {
         setUser(user);
         
+        // Set analytics user ID
+        if (user) {
+          setAnalyticsUserId(user.uid);
+        } else {
+          setAnalyticsUserId(null);
+        }
+        
         // Fetch profile if user is logged in and email is verified
         if (user && user.emailVerified) {
           await fetchUserProfile(user);
@@ -92,6 +101,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const signUp = async (email: string, password: string) => {
     const userCredential = await createUserWithEmailAndPassword(auth, email, password);
     await sendEmailVerification(userCredential.user);
+    
+    // Track sign up event
+    trackEvent('sign_up', {
+      method: 'email',
+    });
   };
 
   const signIn = async (email: string, password: string) => {
@@ -100,6 +114,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (userCredential.user.emailVerified) {
       await fetchUserProfile(userCredential.user);
     }
+    
+    // Track login event
+    trackEvent('login', {
+      method: 'email',
+    });
   };
 
   const logout = async () => {

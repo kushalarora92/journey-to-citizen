@@ -1,12 +1,13 @@
 import React from 'react';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
-import { Tabs } from 'expo-router';
-import { Pressable, Alert, Platform, Image } from 'react-native';
+import { Tabs, usePathname, useRouter } from 'expo-router';
+import { Pressable, Alert, Platform, Image, TouchableOpacity } from 'react-native';
 
 import Colors from '@/constants/Colors';
 import { useColorScheme } from '@/components/useColorScheme';
 import { useClientOnlyValue } from '@/components/useClientOnlyValue';
 import { useAuth } from '@/context/AuthContext';
+import { useAnalytics } from '@/hooks/useAnalytics';
 import WebNavigationBar from '@/components/WebNavigationBar';
 
 // You can explore the built-in icon families and icons on the web at https://icons.expo.fyi/
@@ -19,20 +20,39 @@ function TabBarIcon(props: {
 
 // Custom header logo component for headerLeft
 function HeaderLogo() {
+  const router = useRouter();
+  const pathname = usePathname();
+  const { trackEvent } = useAnalytics();
+  
+  const handleLogoPress = () => {
+    trackEvent('header_logo_click', {
+      current_tab: pathname,
+    });
+    router.push('/(tabs)');
+  };
+  
   return (
-    <Image
-      source={require('../../assets/images/logo.png')}
-      style={{ width: 70, height: 40 }}
-      resizeMode="contain"
-    />
+    <TouchableOpacity onPress={handleLogoPress}>
+      <Image
+        source={require('../../assets/images/logo.png')}
+        style={{ width: 70, height: 40 }}
+        resizeMode="contain"
+      />
+    </TouchableOpacity>
   );
 }
 
 export default function TabLayout() {
   const colorScheme = useColorScheme();
   const { logout } = useAuth();
+  const pathname = usePathname();
+  const { trackEvent } = useAnalytics();
 
   const handleLogout = () => {
+    trackEvent('logout_button_click', {
+      current_tab: pathname,
+    });
+    
     if (Platform.OS === 'web') {
       // Use window.confirm for web
       if (window.confirm('Are you sure you want to logout?')) {

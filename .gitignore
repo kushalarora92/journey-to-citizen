@@ -25,6 +25,10 @@ web-build
 *.pem
 *.p12
 
+# Firebase config files (contain sensitive keys)
+**/google-services.json
+**/GoogleService-Info.plist
+
 # IDE
 .vscode
 .idea

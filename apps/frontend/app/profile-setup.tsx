@@ -22,12 +22,16 @@ import {
 } from '@gluestack-ui/themed';
 import { useAuth } from '@/context/AuthContext';
 import { useFirebaseFunctions } from '@/hooks/useFirebaseFunctions';
+import { useScreenTracking } from '@/hooks/useAnalytics';
 
 export default function ProfileSetupScreen() {
   const colorScheme = useColorScheme();
   const router = useRouter();
   const { userProfile, updateLocalProfile } = useAuth();
-  const { updateUserProfile } = useFirebaseFunctions();  // Form state
+  const { updateUserProfile } = useFirebaseFunctions();
+  
+  // Track screen view
+  useScreenTracking('Profile Setup');  // Form state
   const [displayName, setDisplayName] = useState('');
   const [immigrationStatus, setImmigrationStatus] = useState<'visitor' | 'student' | 'worker' | 'permanent_resident'>('permanent_resident');
   const [hasPR, setHasPR] = useState<'yes' | 'no'>('no');

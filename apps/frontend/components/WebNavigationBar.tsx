@@ -3,6 +3,7 @@ import { View, TouchableOpacity, StyleSheet } from 'react-native';
 import { useRouter, usePathname } from 'expo-router';
 import { Text } from '@gluestack-ui/themed';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
+import { useAnalytics } from '@/hooks/useAnalytics';
 
 interface NavItem {
   path: string;
@@ -25,6 +26,7 @@ const navItems: NavItem[] = [
 export default function WebNavigationBar() {
   const router = useRouter();
   const pathname = usePathname();
+  const { trackEvent } = useAnalytics();
 
   const isActive = (path: string) => {
     // Exact match for dashboard (root)
@@ -36,6 +38,16 @@ export default function WebNavigationBar() {
     return pathname === tabPath || pathname.startsWith(tabPath + '/');
   };
 
+  const handleNavClick = (path: string, label: string) => {
+    trackEvent('navigation_click', {
+      from_tab: pathname,
+      to_tab: path,
+      label: label,
+      is_web: true,
+    });
+    router.push(path as any);
+  };
+
   return (
     <View style={styles.container}>
       {navItems.map((item) => {
@@ -44,7 +56,7 @@ export default function WebNavigationBar() {
           <TouchableOpacity
             key={item.path}
             style={[styles.navItem, active && styles.navItemActive]}
-            onPress={() => router.push(item.path as any)}
+            onPress={() => handleNavClick(item.path, item.label)}
           >
             <FontAwesome
               name={item.icon}

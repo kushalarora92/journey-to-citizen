@@ -1,8 +1,9 @@
 import React, { useMemo } from 'react';
-import { StyleSheet, ScrollView, Alert, Platform } from 'react-native';
+import { StyleSheet, ScrollView, Alert, Platform, TouchableOpacity, Pressable } from 'react-native';
 import { View, Text, VStack, HStack } from '@gluestack-ui/themed';
 import { useAuth } from '@/context/AuthContext';
 import { useFirebaseFunctions } from '@/hooks/useFirebaseFunctions';
+import { useAnalytics, useScreenTracking } from '@/hooks/useAnalytics';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import DateRangeList, { DateRangeEntry } from '@/components/DateRangeList';
 import { AbsenceEntry } from '@journey-to-citizen/types';
@@ -15,6 +16,19 @@ import {
 export default function AbsencesScreen() {
   const { userProfile, profileLoading, updateLocalProfile } = useAuth();
   const { updateUserProfile } = useFirebaseFunctions();
+  const { trackEvent } = useAnalytics();
+  
+  // Track screen view
+  useScreenTracking('Travel Absences');
+  
+  // Helper function for consistent tracking
+  const trackAbsencesAction = (action: string, params?: Record<string, any>) => {
+    trackEvent('absences_action', {
+      action,
+      screen: 'Travel Absences',
+      ...params,
+    });
+  };
 
   if (profileLoading) {
     return (
@@ -58,6 +72,12 @@ export default function AbsencesScreen() {
   // Handlers for absence entries
   const handleAddAbsence = async (entry: Omit<DateRangeEntry, 'id'>) => {
     try {
+      trackAbsencesAction('add_trip_attempt', {
+        has_destination: !!(entry as any).place,
+        from_date: entry.from,
+        to_date: entry.to,
+      });
+      
       const currentAbsences = userProfile?.travelAbsences || [];
       
       // Check for overlaps and warn user (but allow them to continue)
@@ -83,7 +103,14 @@ export default function AbsencesScreen() {
           }
         });
         
-        if (!shouldContinue) return;
+        if (!shouldContinue) {
+          trackAbsencesAction('add_trip_cancelled', { reason: 'overlap_warning' });
+          return;
+        }
+        
+        trackAbsencesAction('add_trip_confirmed_despite_overlap', {
+          overlapping_count: overlapping.length,
+        });
       }
       
       const newEntry = {
@@ -97,14 +124,26 @@ export default function AbsencesScreen() {
         travelAbsences: [...currentAbsences, newEntry],
       });
       
-      if (result.data) updateLocalProfile(result.data);
+      if (result.data) {
+        updateLocalProfile(result.data);
+        trackAbsencesAction('add_trip_success', {
+          trip_id: newEntry.id,
+          has_destination: !!newEntry.place,
+        });
+      }
     } catch (error: any) {
+      trackAbsencesAction('add_trip_error', { error: error.message });
       throw new Error(error.message || 'Failed to add trip');
     }
   };
 
   const handleEditAbsence = async (id: string, updates: Partial<DateRangeEntry>) => {
     try {
+      trackAbsencesAction('edit_trip_attempt', {
+        trip_id: id,
+        updated_fields: Object.keys(updates),
+      });
+      
       const currentAbsences = userProfile?.travelAbsences || [];
       const updatedAbsences = currentAbsences.map(entry =>
         entry.id === id ? { ...entry, ...updates } : entry
@@ -114,14 +153,20 @@ export default function AbsencesScreen() {
         travelAbsences: updatedAbsences,
       });
       
-      if (result.data) updateLocalProfile(result.data);
+      if (result.data) {
+        updateLocalProfile(result.data);
+        trackAbsencesAction('edit_trip_success', { trip_id: id });
+      }
     } catch (error: any) {
+      trackAbsencesAction('edit_trip_error', { trip_id: id, error: error.message });
       throw new Error(error.message || 'Failed to update trip');
     }
   };
 
   const handleDeleteAbsence = async (id: string) => {
     try {
+      trackAbsencesAction('delete_trip_attempt', { trip_id: id });
+      
       const currentAbsences = userProfile?.travelAbsences || [];
       const updatedAbsences = currentAbsences.filter(entry => entry.id !== id);
       
@@ -129,8 +174,12 @@ export default function AbsencesScreen() {
         travelAbsences: updatedAbsences,
       });
       
-      if (result.data) updateLocalProfile(result.data);
+      if (result.data) {
+        updateLocalProfile(result.data);
+        trackAbsencesAction('delete_trip_success', { trip_id: id });
+      }
     } catch (error: any) {
+      trackAbsencesAction('delete_trip_error', { trip_id: id, error: error.message });
       throw new Error(error.message || 'Failed to delete trip');
     }
   };
@@ -151,7 +200,10 @@ export default function AbsencesScreen() {
           </View>
 
           {/* Info Card */}
-          <View style={styles.infoCard}>
+          <Pressable 
+            style={[styles.infoCard, { cursor: 'auto' }]}
+            onPress={() => trackAbsencesAction('important_rules_click')}
+          >
             <HStack space="sm" alignItems="flex-start">
               <FontAwesome name="info-circle" size={16} color="#3b82f6" style={{ marginTop: 2 }} />
               <View style={{ flex: 1 }}>
@@ -164,7 +216,7 @@ export default function AbsencesScreen() {
                 </Text>
               </View>
             </HStack>
-          </View>
+          </Pressable>
 
           {/* Current Trip Alert */}
           {currentTrips.length > 0 && (
@@ -194,25 +246,49 @@ export default function AbsencesScreen() {
           {absences.length > 0 && (
             <View style={styles.statsCard}>
               <HStack justifyContent="space-around">
-                <View style={styles.statItem}>
+                <Pressable 
+                  style={[styles.statItem, { cursor: 'auto' }]}
+                  onPress={() => trackAbsencesAction('filter_click', { 
+                    filter_type: 'Past', 
+                    count: pastTrips.length 
+                  })}
+                >
                   <Text style={styles.statValue}>{pastTrips.length}</Text>
                   <Text style={styles.statLabel}>Past</Text>
-                </View>
+                </Pressable>
                 <View style={styles.statDivider} />
-                <View style={styles.statItem}>
+                <Pressable 
+                  style={[styles.statItem, { cursor: 'auto' }]}
+                  onPress={() => trackAbsencesAction('filter_click', { 
+                    filter_type: 'Current', 
+                    count: currentTrips.length 
+                  })}
+                >
                   <Text style={styles.statValue}>{currentTrips.length}</Text>
                   <Text style={styles.statLabel}>Current</Text>
-                </View>
+                </Pressable>
                 <View style={styles.statDivider} />
-                <View style={styles.statItem}>
+                <Pressable 
+                  style={[styles.statItem, { cursor: 'auto' }]}
+                  onPress={() => trackAbsencesAction('filter_click', {
+                    filter_type: 'Upcoming',
+                    count: upcomingTrips.length 
+                  })}
+                >
                   <Text style={styles.statValue}>{upcomingTrips.length}</Text>
                   <Text style={styles.statLabel}>Upcoming</Text>
-                </View>
+                </Pressable>
                 <View style={styles.statDivider} />
-                <View style={styles.statItem}>
+                <Pressable 
+                  style={[styles.statItem, { cursor: 'auto' }]}
+                  onPress={() => trackAbsencesAction('filter_click', {
+                    filter_type: 'Total',
+                    count: absences.length 
+                  })}
+                >
                   <Text style={styles.statValue}>{absences.length}</Text>
                   <Text style={styles.statLabel}>Total</Text>
-                </View>
+                </Pressable>
               </HStack>
             </View>
           )}
@@ -245,11 +321,14 @@ export default function AbsencesScreen() {
           </View>
 
           {/* Bottom Info */}
-          <View style={styles.bottomNote}>
+          <Pressable 
+            style={[styles.bottomNote, { cursor: 'auto' }]}
+            onPress={() => trackAbsencesAction('tip_section_click')}
+          >
             <Text style={styles.bottomNoteText}>
               💡 Tip: Add trips as soon as you book them to keep your eligibility date accurate.
             </Text>
-          </View>
+          </Pressable>
         </VStack>
       </View>
     </ScrollView>

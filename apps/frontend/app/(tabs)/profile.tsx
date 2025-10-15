@@ -1,9 +1,10 @@
 import { useState } from 'react';
-import { StyleSheet, ScrollView, TouchableOpacity, Alert, Platform, TextInput, Modal } from 'react-native';
+import { StyleSheet, ScrollView, TouchableOpacity, Alert, Platform, TextInput, Modal, Pressable } from 'react-native';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import WebDateInput from '@/components/WebDateInput';
 import { useColorScheme } from '@/components/useColorScheme';
+import { useAnalytics, useScreenTracking } from '@/hooks/useAnalytics';
 
 import { Text, View } from '@/components/Themed';
 import { useAuth } from '@/context/AuthContext';
@@ -20,6 +21,20 @@ export default function ProfileScreen() {
   const colorScheme = useColorScheme();
   const { user, userProfile, profileLoading, sendVerificationEmail, updateLocalProfile } = useAuth();
   const { updateUserProfile } = useFirebaseFunctions();
+  const { trackEvent } = useAnalytics();
+  
+  // Track screen view
+  useScreenTracking('Profile');
+  
+  // Helper function for consistent tracking
+  const trackProfileAction = (action: string, params?: Record<string, any>) => {
+    trackEvent('profile_action', {
+      action,
+      screen: 'Profile',
+      ...params,
+    });
+  };
+  
   const [isEditingName, setIsEditingName] = useState(false);
   const [editedName, setEditedName] = useState('');
   const [isEditingStatus, setIsEditingStatus] = useState(false);
@@ -29,6 +44,7 @@ export default function ProfileScreen() {
   const [isSaving, setIsSaving] = useState(false);
 
   const handleEditNamePress = () => {
+    trackProfileAction('edit_name_click');
     setEditedName(userProfile?.displayName || '');
     setIsEditingName(true);
   };
@@ -40,6 +56,7 @@ export default function ProfileScreen() {
 
   const handleSaveName = async () => {
     if (!editedName.trim()) {
+      trackProfileAction('edit_name_error', { reason: 'empty_name' });
       const message = 'Please enter a valid name';
       Platform.OS === 'web' ? alert(message) : Alert.alert('Error', message);
       return;
@@ -47,13 +64,18 @@ export default function ProfileScreen() {
 
     setIsSaving(true);
     try {
+      trackProfileAction('edit_name_attempt', { new_name_length: editedName.trim().length });
       const result = await updateUserProfile({ displayName: editedName.trim() });
-      if (result.data) updateLocalProfile(result.data);
+      if (result.data) {
+        updateLocalProfile(result.data);
+        trackProfileAction('edit_name_success');
+      }
       const successMessage = 'Name updated successfully!';
       Platform.OS === 'web' ? alert(successMessage) : Alert.alert('Success', successMessage);
       setIsEditingName(false);
       setEditedName('');
     } catch (error: any) {
+      trackProfileAction('edit_name_error', { error: error.message });
       const errorMessage = error.message || 'Failed to update name';
       Platform.OS === 'web' ? alert(`Error: ${errorMessage}`) : Alert.alert('Error', errorMessage);
     } finally {
@@ -64,6 +86,11 @@ export default function ProfileScreen() {
   const handleSaveStatus = async (newStatus: string) => {
     setIsSaving(true);
     try {
+      trackProfileAction('edit_immigration_status_attempt', { 
+        old_status: userProfile?.immigrationStatus,
+        new_status: newStatus 
+      });
+      
       const updates: any = { immigrationStatus: newStatus };
       
       // If changing to non-PR, remove PR date and presence entries
@@ -73,11 +100,15 @@ export default function ProfileScreen() {
       }
       
       const result = await updateUserProfile(updates);
-      if (result.data) updateLocalProfile(result.data);
+      if (result.data) {
+        updateLocalProfile(result.data);
+        trackProfileAction('edit_immigration_status_success', { new_status: newStatus });
+      }
       setIsEditingStatus(false);
       const successMessage = 'Immigration status updated successfully!';
       Platform.OS === 'web' ? alert(successMessage) : Alert.alert('Success', successMessage);
     } catch (error: any) {
+      trackProfileAction('edit_immigration_status_error', { error: error.message });
       const errorMessage = error.message || 'Failed to update status';
       Platform.OS === 'web' ? alert(`Error: ${errorMessage}`) : Alert.alert('Error', errorMessage);
     } finally {
@@ -86,6 +117,7 @@ export default function ProfileScreen() {
   };
 
   const handleEditPRDatePress = () => {
+    trackProfileAction('edit_pr_date_click');
     setEditedPRDate(userProfile?.prDate ? new Date(userProfile.prDate) : new Date());
     setIsEditingPRDate(true);
   };
@@ -98,6 +130,7 @@ export default function ProfileScreen() {
 
   const handleSavePRDate = async () => {
     if (!editedPRDate) {
+      trackProfileAction('edit_pr_date_error', { reason: 'no_date_selected' });
       const message = 'Please select a valid date';
       Platform.OS === 'web' ? alert(message) : Alert.alert('Error', message);
       return;
@@ -105,14 +138,19 @@ export default function ProfileScreen() {
 
     setIsSaving(true);
     try {
+      trackProfileAction('edit_pr_date_attempt', { date: editedPRDate.toISOString().split('T')[0] });
       const result = await updateUserProfile({ prDate: editedPRDate.toISOString().split('T')[0] });
-      if (result.data) updateLocalProfile(result.data);
+      if (result.data) {
+        updateLocalProfile(result.data);
+        trackProfileAction('edit_pr_date_success');
+      }
       const successMessage = 'PR date updated successfully!';
       Platform.OS === 'web' ? alert(successMessage) : Alert.alert('Success', successMessage);
       setIsEditingPRDate(false);
       setEditedPRDate(null);
       setShowPRDatePicker(false);
     } catch (error: any) {
+      trackProfileAction('edit_pr_date_error', { error: error.message });
       const errorMessage = error.message || 'Failed to update PR date';
       Platform.OS === 'web' ? alert(`Error: ${errorMessage}`) : Alert.alert('Error', errorMessage);
     } finally {
@@ -134,6 +172,12 @@ export default function ProfileScreen() {
   // Handlers for presence entries
   const handleAddPresence = async (entry: Omit<DateRangeEntry, 'id'>) => {
     try {
+      trackProfileAction('add_presence_attempt', {
+        has_purpose: !!(entry as any).purpose,
+        from_date: entry.from,
+        to_date: entry.to,
+      });
+      
       const currentPresence = userProfile?.presenceInCanada || [];
       
       // Check for overlaps and warn user (but allow them to continue)
@@ -159,7 +203,14 @@ export default function ProfileScreen() {
           }
         });
         
-        if (!shouldContinue) return;
+        if (!shouldContinue) {
+          trackProfileAction('add_presence_cancelled', { reason: 'overlap_warning' });
+          return;
+        }
+        
+        trackProfileAction('add_presence_confirmed_despite_overlap', {
+          overlapping_count: overlapping.length,
+        });
       }
       
       const newEntry = {
@@ -173,14 +224,26 @@ export default function ProfileScreen() {
         presenceInCanada: [...currentPresence, newEntry],
       });
       
-      if (result.data) updateLocalProfile(result.data);
+      if (result.data) {
+        updateLocalProfile(result.data);
+        trackProfileAction('add_presence_success', {
+          entry_id: newEntry.id,
+          purpose: newEntry.purpose,
+        });
+      }
     } catch (error: any) {
+      trackProfileAction('add_presence_error', { error: error.message });
       throw new Error(error.message || 'Failed to add entry');
     }
   };
 
   const handleEditPresence = async (id: string, updates: Partial<DateRangeEntry>) => {
     try {
+      trackProfileAction('edit_presence_attempt', {
+        entry_id: id,
+        updated_fields: Object.keys(updates),
+      });
+      
       const currentPresence = userProfile?.presenceInCanada || [];
       const updatedPresence = currentPresence.map(entry =>
         entry.id === id ? { ...entry, ...updates } : entry
@@ -190,14 +253,20 @@ export default function ProfileScreen() {
         presenceInCanada: updatedPresence,
       });
       
-      if (result.data) updateLocalProfile(result.data);
+      if (result.data) {
+        updateLocalProfile(result.data);
+        trackProfileAction('edit_presence_success', { entry_id: id });
+      }
     } catch (error: any) {
+      trackProfileAction('edit_presence_error', { entry_id: id, error: error.message });
       throw new Error(error.message || 'Failed to update entry');
     }
   };
 
   const handleDeletePresence = async (id: string) => {
     try {
+      trackProfileAction('delete_presence_attempt', { entry_id: id });
+      
       const currentPresence = userProfile?.presenceInCanada || [];
       const updatedPresence = currentPresence.filter(entry => entry.id !== id);
       
@@ -205,8 +274,12 @@ export default function ProfileScreen() {
         presenceInCanada: updatedPresence,
       });
       
-      if (result.data) updateLocalProfile(result.data);
+      if (result.data) {
+        updateLocalProfile(result.data);
+        trackProfileAction('delete_presence_success', { entry_id: id });
+      }
     } catch (error: any) {
+      trackProfileAction('delete_presence_error', { entry_id: id, error: error.message });
       throw new Error(error.message || 'Failed to delete entry');
     }
   };
@@ -486,23 +559,29 @@ export default function ProfileScreen() {
               endDateNote="Day you left/traveled back from Canada (day included). Could also be your PR date minus 1 day."
             />
             
-            <View style={styles.noteBox}>
+            <Pressable 
+              style={[styles.noteBox, { cursor: 'auto' }]}
+              onPress={() => trackProfileAction('helper_text_click', { type: 'visitor_stays_info' })}
+            >
               <FontAwesome name="info-circle" size={14} color="#3b82f6" />
               <Text style={styles.noteText}>
                 Include: visitor stays, study permits, work permits, protected person status, 
                 business visits, or time with no legal status.
               </Text>
-            </View>
+            </Pressable>
           </View>
         )}
 
         {/* Link to Travel Absences */}
-        <View style={styles.infoCard}>
+        <Pressable 
+          style={[styles.infoCard, { cursor: 'auto' }]}
+          onPress={() => trackProfileAction('helper_text_click', { type: 'travel_absences_reminder' })}
+        >
           <Text style={styles.infoText}>
             Don't forget to add your <Text style={styles.linkText}>travel absences</Text> in the Travel tab
             to get accurate citizenship eligibility calculations.
           </Text>
-        </View>
+        </Pressable>
       </View>
       <View style={styles.separator} lightColor="#eee" darkColor="rgba(255,255,255,0.1)" />
     </ScrollView>

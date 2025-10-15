@@ -1,9 +1,10 @@
-import { StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
+import { StyleSheet, ScrollView, TouchableOpacity, Pressable } from 'react-native';
 import { useRouter } from 'expo-router';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 
 import { Text, View } from '@/components/Themed';
 import { useAuth } from '@/context/AuthContext';
+import { useAnalytics, useScreenTracking } from '@/hooks/useAnalytics';
 import { 
   getEligibility, 
   getUpcomingTrips, 
@@ -14,6 +15,20 @@ import {
 export default function TabOneScreen() {
   const router = useRouter();
   const { user, userProfile, profileLoading } = useAuth();
+  const { trackEvent } = useAnalytics();
+  
+  // Track screen view
+  useScreenTracking('Dashboard');
+
+  // Analytics tracking helpers
+  const trackDashboardClick = (element: string, additionalParams?: Record<string, any>) => {
+    trackEvent('dashboard_click', {
+      element,
+      has_complete_profile: hasCompleteProfile,
+      is_eligible: eligibility?.isEligible,
+      ...additionalParams,
+    });
+  };
 
   // Get display name or fallback to email
   const displayName = userProfile?.displayName || user?.email?.split('@')[0] || 'User';
@@ -28,28 +43,39 @@ export default function TabOneScreen() {
   return (
     <ScrollView style={styles.container}>
       {/* Header */}
-      <View style={styles.header}>
+      <Pressable 
+        style={[styles.header, { cursor: 'auto' }]}
+        onPress={() => trackDashboardClick('greeting_section', {
+          has_display_name: !!displayName,
+        })}
+      >
         <Text style={styles.greeting}>Welcome, eh!</Text>
         <Text style={styles.name}>
           {profileLoading ? '...' : displayName} 👋
         </Text>
-      </View>
+      </Pressable>
 
       {/* Email Verification Warning */}
       {!user?.emailVerified && (
-        <View style={styles.warningBox}>
+        <Pressable 
+          style={[styles.warningBox, { cursor: 'auto' }]}
+          onPress={() => trackDashboardClick('email_verification_warning')}
+        >
           <FontAwesome name="exclamation-triangle" size={16} color="#92400e" />
           <Text style={styles.warningText}>
             Please verify your email to access all features
           </Text>
-        </View>
+        </Pressable>
       )}
 
       {/* Upcoming Trips Alert */}
       {upcomingTrips > 0 && (
         <TouchableOpacity 
           style={styles.upcomingBox}
-          onPress={() => router.push('/(tabs)/absences' as any)}
+          onPress={() => {
+            trackDashboardClick('upcoming_trips_alert', { trip_count: upcomingTrips });
+            router.push('/(tabs)/absences' as any);
+          }}
         >
           <FontAwesome name="plane" size={18} color="#f59e0b" />
           <View style={styles.upcomingContent}>
@@ -76,7 +102,10 @@ export default function TabOneScreen() {
             </Text>
             <TouchableOpacity 
               style={styles.completeButton}
-              onPress={() => router.push('/(tabs)/profile' as any)}
+              onPress={() => {
+                trackDashboardClick('complete_profile_button');
+                router.push('/(tabs)/profile' as any);
+              }}
             >
               <Text style={styles.completeButtonText}>Go to Profile</Text>
               <FontAwesome name="arrow-right" size={14} color="#fff" />
@@ -87,10 +116,17 @@ export default function TabOneScreen() {
         /* Eligibility Dashboard */
         <View style={styles.section}>
           {/* Eligibility Status Card */}
-          <View style={[
-            styles.statusCard,
-            eligibility.isEligible ? styles.statusCardEligible : styles.statusCardPending
-          ]}>
+          <Pressable 
+            style={[
+              styles.statusCard,
+              eligibility.isEligible ? styles.statusCardEligible : styles.statusCardPending,
+              { cursor: 'auto' }
+            ]}
+            onPress={() => trackDashboardClick('eligibility_status_card', {
+              is_eligible: eligibility.isEligible,
+              days_eligible: eligibility.totalEligibleDays,
+            })}
+          >
             <View style={styles.statusHeader}>
               <FontAwesome 
                 name={eligibility.isEligible ? "check-circle" : "clock-o"} 
@@ -118,10 +154,17 @@ export default function TabOneScreen() {
                 </Text>
               </View>
             )}
-          </View>
+          </Pressable>
 
           {/* Progress Bar */}
-          <View style={styles.progressCard}>
+          <Pressable 
+            style={[styles.progressCard, { cursor: 'auto' }]}
+            onPress={() => trackDashboardClick('progress_card', {
+              progress_percentage: Math.round(eligibility.progress),
+              days_completed: eligibility.totalEligibleDays,
+              days_remaining: eligibility.daysRemaining,
+            })}
+          >
             <View style={styles.progressHeader}>
               <Text style={styles.progressTitle}>Your Progress</Text>
               <Text style={styles.progressPercentage}>
@@ -148,31 +191,57 @@ export default function TabOneScreen() {
                 </Text>
               )}
             </View>
-          </View>
+          </Pressable>
 
           {/* Statistics Grid */}
           <View style={styles.statsGrid}>
-            <View style={styles.statCard}>
+            <Pressable 
+              style={[styles.statCard, { cursor: 'auto' }]}
+              onPress={() => trackDashboardClick('stat_card_click', {
+                stat_type: 'days_as_pr',
+                value: eligibility.daysInCanadaAsPR,
+              })}
+            >
               <FontAwesome name="home" size={20} color="#3b82f6" />
               <Text style={styles.statValue}>{eligibility.daysInCanadaAsPR}</Text>
               <Text style={styles.statLabel}>Days as PR</Text>
-            </View>
+            </Pressable>
 
-            <View style={styles.statCard}>
+            <Pressable 
+              style={[styles.statCard, { cursor: 'auto' }]}
+              onPress={() => trackDashboardClick('stat_card_click', {
+                stat_type: 'pre_pr_credit',
+                value: eligibility.preDaysCredit,
+              })}
+            >
               <FontAwesome name="star" size={20} color="#f59e0b" />
               <Text style={styles.statValue}>{eligibility.preDaysCredit}</Text>
               <Text style={styles.statLabel}>Pre-PR Credit</Text>
-            </View>
+            </Pressable>
 
-            <View style={styles.statCard}>
+            <Pressable 
+              style={[styles.statCard, { cursor: 'auto' }]}
+              onPress={() => trackDashboardClick('stat_card_click', {
+                stat_type: 'absence_days',
+                value: eligibility.totalAbsenceDays,
+              })}
+            >
               <FontAwesome name="plane" size={20} color="#ef4444" />
               <Text style={styles.statValue}>{eligibility.totalAbsenceDays}</Text>
               <Text style={styles.statLabel}>Absence Days</Text>
-            </View>
+            </Pressable>
           </View>
 
           {/* How It's Calculated */}
-          <View style={styles.calculationCard}>
+          <Pressable 
+            style={[styles.calculationCard, { cursor: 'auto' }]}
+            onPress={() => trackDashboardClick('calculation_card', {
+              days_as_pr: eligibility.daysInCanadaAsPR,
+              pre_pr_credit: eligibility.preDaysCredit,
+              absence_days: eligibility.totalAbsenceDays,
+              total_eligible: eligibility.totalEligibleDays,
+            })}
+          >
             <Text style={styles.calculationTitle}>
               <FontAwesome name="calculator" size={14} /> How We Calculate
             </Text>
@@ -197,14 +266,17 @@ export default function TabOneScreen() {
             <Text style={styles.calculationNote}>
               Note: Only the last 5 years count toward citizenship eligibility. Each day before PR counts as 0.5 days (max 365). Departure and return days count as present in Canada.
             </Text>
-          </View>
+          </Pressable>
 
           {/* Quick Actions */}
           <View style={styles.actionsCard}>
             <Text style={styles.actionsTitle}>Quick Actions</Text>
             <TouchableOpacity 
               style={styles.actionButton}
-              onPress={() => router.push('/(tabs)/profile' as any)}
+              onPress={() => {
+                trackDashboardClick('quick_action_update_profile');
+                router.push('/(tabs)/profile' as any);
+              }}
             >
               <FontAwesome name="user" size={16} color="#3b82f6" />
               <Text style={styles.actionButtonText}>Update Profile</Text>
@@ -212,7 +284,10 @@ export default function TabOneScreen() {
             </TouchableOpacity>
             <TouchableOpacity 
               style={styles.actionButton}
-              onPress={() => router.push('/(tabs)/absences' as any)}
+              onPress={() => {
+                trackDashboardClick('quick_action_manage_travel');
+                router.push('/(tabs)/absences' as any);
+              }}
             >
               <FontAwesome name="plane" size={16} color="#3b82f6" />
               <Text style={styles.actionButtonText}>Manage Travel History</Text>
@@ -221,14 +296,17 @@ export default function TabOneScreen() {
           </View>
 
           {/* Disclaimers */}
-          <View style={styles.disclaimerCard}>
+          <Pressable 
+            style={[styles.disclaimerCard, { cursor: 'auto' }]}
+            onPress={() => trackDashboardClick('disclaimer_click')}
+          >
             <FontAwesome name="info-circle" size={14} color="#64748b" />
             <Text style={styles.disclaimerText}>
               This calculation is based on the information you've provided and is for planning 
               purposes only. For official eligibility determination, consult IRCC or a licensed 
               immigration consultant.
             </Text>
-          </View>
+          </Pressable>
         </View>
       )}
     </ScrollView>
