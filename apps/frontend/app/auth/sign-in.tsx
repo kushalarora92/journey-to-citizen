@@ -39,7 +39,6 @@ export default function SignInScreen() {
 
     try {
       await signIn(email, password);
-      console.log('Sign in successful');
       // Navigation is handled by _layout.tsx
     } catch (err: any) {
       console.error('Sign in error:', err);

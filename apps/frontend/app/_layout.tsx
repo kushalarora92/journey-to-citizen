@@ -40,36 +40,21 @@ function RootLayoutNav() {
     const inVerifyEmailScreen = segments[1] === 'verify-email';
     const inProfileSetupScreen = segments[0] === 'profile-setup';
 
-    console.log('Navigation check:', {
-      hasUser: !!user,
-      email: user?.email,
-      emailVerified: user?.emailVerified,
-      needsProfileSetup,
-      inAuthGroup,
-      inVerifyEmailScreen,
-      inProfileSetupScreen,
-      segments,
-    });
-
     if (!user && !inAuthGroup) {
       // Redirect to sign-in if user is not authenticated
-      console.log('Redirecting to sign-in (no user)');
       router.replace('/auth/sign-in' as any);
     } else if (user && !user.emailVerified) {
       // Redirect to verify-email if user is not verified (unless already there)
       if (!inVerifyEmailScreen) {
-        console.log('Redirecting to verify-email (unverified user)');
         router.replace('/auth/verify-email' as any);
       }
     } else if (user && user.emailVerified && needsProfileSetup) {
       // Redirect to profile setup if user needs to complete profile
       if (!inProfileSetupScreen) {
-        console.log('Redirecting to profile-setup (incomplete profile)');
         router.replace('/profile-setup' as any);
       }
     } else if (user && user.emailVerified && !needsProfileSetup && (inAuthGroup || inProfileSetupScreen)) {
       // Redirect to tabs if user is authenticated, verified, and has completed profile
-      console.log('Redirecting to tabs (complete profile)');
       router.replace('/(tabs)');
     }
   }, [user, loading, needsProfileSetup, profileLoading, segments]);

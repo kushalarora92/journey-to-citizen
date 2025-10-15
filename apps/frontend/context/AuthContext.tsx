@@ -52,7 +52,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       const profile = await getUserInfo();
       setUserProfile(profile);
-      console.log('✓ User profile loaded:', profile);
     } catch (error) {
       console.error('Error fetching user profile:', error);
       setUserProfile(null);

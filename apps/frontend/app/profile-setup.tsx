@@ -88,7 +88,6 @@ export default function ProfileSetupScreen() {
 
       // Root layout will automatically redirect to dashboard
       // User can navigate to Profile or Travel tabs as needed
-      console.log('Profile setup complete. Redirecting to dashboard.');
     } catch (error: any) {
       console.error('Error updating profile:', error);
       const message = error.message || 'Failed to update profile. Please try again.';

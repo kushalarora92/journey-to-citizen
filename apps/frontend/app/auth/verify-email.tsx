@@ -20,9 +20,6 @@ export default function VerifyEmailScreen() {
   const [lastSentTime, setLastSentTime] = useState<number | null>(null);
   const { user, sendVerificationEmail, logout } = useAuth();
 
-  // Debug logging
-  console.log('VerifyEmailScreen - user:', user?.email, 'verified:', user?.emailVerified);
-
   // Cooldown timer
   useEffect(() => {
     if (cooldown > 0) {
