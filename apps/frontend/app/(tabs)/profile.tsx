@@ -16,7 +16,7 @@ import {
   formatDateForDisplay 
 } from '@/utils/dateRangeValidation';
 
-export default function TabTwoScreen() {
+export default function ProfileScreen() {
   const colorScheme = useColorScheme();
   const { user, userProfile, profileLoading, sendVerificationEmail, updateLocalProfile } = useAuth();
   const { updateUserProfile } = useFirebaseFunctions();

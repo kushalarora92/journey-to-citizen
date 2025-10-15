@@ -76,7 +76,7 @@ export default function TabOneScreen() {
             </Text>
             <TouchableOpacity 
               style={styles.completeButton}
-              onPress={() => router.push('/(tabs)/two' as any)}
+              onPress={() => router.push('/(tabs)/profile' as any)}
             >
               <Text style={styles.completeButtonText}>Go to Profile</Text>
               <FontAwesome name="arrow-right" size={14} color="#fff" />
@@ -204,7 +204,7 @@ export default function TabOneScreen() {
             <Text style={styles.actionsTitle}>Quick Actions</Text>
             <TouchableOpacity 
               style={styles.actionButton}
-              onPress={() => router.push('/(tabs)/two' as any)}
+              onPress={() => router.push('/(tabs)/profile' as any)}
             >
               <FontAwesome name="user" size={16} color="#3b82f6" />
               <Text style={styles.actionButtonText}>Update Profile</Text>

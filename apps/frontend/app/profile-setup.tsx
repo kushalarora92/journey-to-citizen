@@ -88,7 +88,7 @@ export default function ProfileSetupScreen() {
 
       // Determine where to redirect
       if (hadPresenceBeforePR === 'yes') {
-        router.replace('/(tabs)/two'); // Profile tab
+        router.replace('/(tabs)/profile'); // Profile tab
       } else if (hasTravelAbsences === 'yes') {
         router.replace('/(tabs)/absences'); // Travel absences tab
       } else {
