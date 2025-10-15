@@ -458,7 +458,7 @@ export default function ProfileScreen() {
               <Text style={styles.sectionTitle}>Time in Canada Before PR</Text>
             </View>
             <Text style={styles.sectionDescription}>
-              Track your time spent in Canada before becoming a permanent resident. 
+              Track your time spent in Canada before becoming a permanent resident (in the last 5 years or since you landed). 
               Days before PR count as half days toward citizenship (max 365 days credit).
             </Text>
             

@@ -146,7 +146,7 @@ export default function AbsencesScreen() {
               <Text style={styles.title}>Travel Absences</Text>
             </HStack>
             <Text style={styles.subtitle}>
-              Track all your trips outside Canada for accurate citizenship eligibility calculations.
+              Track all your trips outside Canada in the last 5 years (or since you landed in Canada) for accurate citizenship eligibility calculations.
             </Text>
           </View>
 

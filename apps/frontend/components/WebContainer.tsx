@@ -30,5 +30,15 @@ const styles = StyleSheet.create({
   content: {
     flex: 1,
     width: '100%',
+    // Subtle shadow on left and right for visual separation
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 3,
+    borderLeftWidth: 1,
+    borderRightWidth: 1,
+    borderLeftColor: 'rgba(0, 0, 0, 0.05)',
+    borderRightColor: 'rgba(0, 0, 0, 0.05)',
   },
 });

@@ -86,14 +86,9 @@ export default function ProfileSetupScreen() {
         updateLocalProfile(result.data);
       }
 
-      // Determine where to redirect
-      if (hadPresenceBeforePR === 'yes') {
-        router.replace('/(tabs)/profile'); // Profile tab
-      } else if (hasTravelAbsences === 'yes') {
-        router.replace('/(tabs)/absences'); // Travel absences tab
-      } else {
-        router.replace('/(tabs)'); // Dashboard
-      }
+      // Root layout will automatically redirect to dashboard
+      // User can navigate to Profile or Travel tabs as needed
+      console.log('Profile setup complete. Redirecting to dashboard.');
     } catch (error: any) {
       console.error('Error updating profile:', error);
       const message = error.message || 'Failed to update profile. Please try again.';
