@@ -83,7 +83,7 @@ export default function SignUpScreen() {
         contentContainerStyle={{ flexGrow: 1 }}
         keyboardShouldPersistTaps="handled"
       >
-        <Box flex={1} bg="$background" p="$6" justifyContent="center">
+        <Box flex={1} p="$6" justifyContent="center">
           <VStack space="lg" maxWidth={400} width="100%" alignSelf="center" gap={"$8"}>
             <AuthBranding />
             <VStack space="md">

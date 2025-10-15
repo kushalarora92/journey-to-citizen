@@ -4,14 +4,15 @@ import { useFonts } from 'expo-font';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect } from 'react';
-import { StatusBar } from 'react-native';
+import { StatusBar, StyleSheet } from 'react-native';
 import 'react-native-reanimated';
-import { GluestackUIProvider } from '@gluestack-ui/themed';
+import { GluestackUIProvider, View } from '@gluestack-ui/themed';
 import { config } from '../gluestack-ui.config';
 
 import { useColorScheme } from '@/components/useColorScheme';
 import { AuthProvider, useAuth } from '@/context/AuthContext';
 import Colors from '@/constants/Colors';
+import WebContainer from '@/components/WebContainer';
 
 export {
   // Catch any errors thrown by the Layout component.
@@ -75,12 +76,16 @@ function RootLayoutNav() {
 
   return (
     <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-      <Stack>
-        <Stack.Screen name="auth" options={{ headerShown: false }} />
-        <Stack.Screen name="profile-setup" options={{ headerShown: false }} />
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen name="modal" options={{ presentation: 'modal' }} />
-      </Stack>
+      <View style={[styles.rootContainer, { backgroundColor: Colors[colorScheme].background }]}>
+        <WebContainer>
+          <Stack>
+            <Stack.Screen name="auth" options={{ headerShown: false }} />
+            <Stack.Screen name="profile-setup" options={{ headerShown: false }} />
+            <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+            <Stack.Screen name="modal" options={{ presentation: 'modal' }} />
+          </Stack>
+        </WebContainer>
+      </View>
     </ThemeProvider>
   );
 }
@@ -119,3 +124,9 @@ export default function RootLayout() {
     </GluestackUIProvider>
   );
 }
+
+const styles = StyleSheet.create({
+  rootContainer: {
+    flex: 1,
+  },
+});
