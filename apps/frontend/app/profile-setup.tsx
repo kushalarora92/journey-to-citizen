@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
-import { ScrollView, StyleSheet, TouchableOpacity, Platform, Alert } from 'react-native';
+import { ScrollView, StyleSheet, TouchableOpacity, Platform, Alert, TextInput } from 'react-native';
 import { Stack, useRouter } from 'expo-router';
 import DateTimePicker from '@react-native-community/datetimepicker';
+import WebDateInput from '@/components/WebDateInput';
+import { useColorScheme } from '@/components/useColorScheme';
 import { 
   View, 
   Text, 
@@ -22,6 +24,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useFirebaseFunctions } from '@/hooks/useFirebaseFunctions';
 
 export default function ProfileSetupScreen() {
+  const colorScheme = useColorScheme();
   const router = useRouter();
   const { userProfile, updateLocalProfile } = useAuth();
   const { updateUserProfile } = useFirebaseFunctions();  // Form state
@@ -189,32 +192,45 @@ export default function ProfileSetupScreen() {
               <Text size="xs" color="$textLight600" mb="$2">
                 Refer to the back of your PR Card or Confirmation of PR document
               </Text>
-              <TouchableOpacity
-                onPress={() => setShowDatePicker(true)}
-                style={styles.dateButton}
-              >
-                <Text size="md" color={prDate ? '$textLight900' : '$textLight400'}>
-                  {prDate ? prDate.toLocaleDateString('en-CA') : 'Select PR date'}
-                </Text>
-              </TouchableOpacity>
-              {showDatePicker && (
-                <DateTimePicker
-                  value={prDate || new Date()}
-                  mode="date"
-                  display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-                  onChange={handleDateChange}
-                  maximumDate={new Date()}
+              {Platform.OS === 'web' ? (
+                /* Web: Use HTML5 date input */
+                <WebDateInput
+                  value={prDate}
+                  onChange={setPrDate}
+                  max={new Date().toISOString().split('T')[0]}
                 />
-              )}
-              {Platform.OS === 'ios' && showDatePicker && (
-                <Button
-                  size="sm"
-                  action="primary"
-                  onPress={() => setShowDatePicker(false)}
-                  mt="$2"
-                >
-                  <ButtonText>Done</ButtonText>
-                </Button>
+              ) : (
+                /* Native: Use DateTimePicker */
+                <>
+                  <TouchableOpacity
+                    onPress={() => setShowDatePicker(true)}
+                    style={styles.dateButton}
+                  >
+                    <Text size="md" color={prDate ? '$textLight900' : '$textLight400'}>
+                      {prDate ? prDate.toLocaleDateString('en-CA') : 'Select PR date'}
+                    </Text>
+                  </TouchableOpacity>
+                  {showDatePicker && (
+                    <DateTimePicker
+                      value={prDate || new Date()}
+                      mode="date"
+                      display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                      themeVariant={colorScheme}
+                      onChange={handleDateChange}
+                      maximumDate={new Date()}
+                    />
+                  )}
+                  {Platform.OS === 'ios' && showDatePicker && (
+                    <Button
+                      size="sm"
+                      action="primary"
+                      onPress={() => setShowDatePicker(false)}
+                      mt="$2"
+                    >
+                      <ButtonText>Done</ButtonText>
+                    </Button>
+                  )}
+                </>
               )}
             </VStack>
           )}

@@ -232,6 +232,7 @@ export default function AbsencesScreen() {
                   label: 'Destination',
                   type: 'text',
                   required: false,
+                  note: 'Country or city you visited (optional)',
                 },
               ]}
               allowFutureDates={true}

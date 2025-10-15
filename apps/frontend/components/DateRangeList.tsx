@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
-import { StyleSheet, TouchableOpacity, Platform, Alert, Modal, ScrollView } from 'react-native';
+import { StyleSheet, TouchableOpacity, Platform, Alert, Modal, ScrollView, TextInput } from 'react-native';
 import { View, Text, VStack, HStack, Button, ButtonText, Input, InputField } from '@gluestack-ui/themed';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import DateTimePicker from '@react-native-community/datetimepicker';
+import WebDateInput from './WebDateInput';
+import { useColorScheme } from './useColorScheme';
 
 export interface DateRangeEntry {
   id: string;
@@ -24,6 +26,7 @@ interface DateRangeListProps {
     type: 'text' | 'select';
     options?: string[];
     required?: boolean;
+    note?: string; // Optional helper text for the field
   }[];
   allowFutureDates?: boolean;
   startDateLabel?: string;
@@ -48,6 +51,7 @@ export default function DateRangeList({
   endDateNote,
   showAbsentDays = false,
 }: DateRangeListProps) {
+  const colorScheme = useColorScheme();
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [fromDate, setFromDate] = useState<Date | null>(null);
@@ -267,56 +271,69 @@ export default function DateRangeList({
                       {startDateNote}
                     </Text>
                   )}
-                  <TouchableOpacity
-                    onPress={() => setShowFromPicker(!showFromPicker)}
-                    style={styles.dateButton}
-                  >
-                    <Text size="md" color={fromDate ? '$textLight900' : '$textLight400'}>
-                      {fromDate ? formatDate(fromDate) : 'Select start date'}
-                    </Text>
-                    <FontAwesome name={showFromPicker ? "chevron-up" : "chevron-down"} size={12} color="#666" />
-                  </TouchableOpacity>
-                  {showFromPicker && (
-                    <View style={styles.pickerWrapper}>
-                      <DateTimePicker
-                        value={fromDate || new Date()}
-                        mode="date"
-                        display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-                        onChange={(event, date) => {
-                          if (Platform.OS === 'ios') {
-                            // On iOS, update state but keep picker open
-                            if (date) setFromDate(date);
-                          } else {
-                            // On Android, close after selection
-                            if (event.type === 'set' && date) {
-                              setFromDate(date);
-                              setShowFromPicker(false);
-                            } else if (event.type === 'dismissed') {
-                              setShowFromPicker(false);
-                            }
-                          }
-                        }}
-                        maximumDate={allowFutureDates ? undefined : new Date()}
-                      />
-                      {/* 
-                        iOS-specific Done button (Bug fix: 2025-10-11)
-                        iOS UIDatePicker in spinner mode fires onChange continuously as user scrolls.
-                        Without this button, picker would close after each component change (month/day/year),
-                        requiring users to reopen it multiple times. This Done button matches native iOS
-                        behavior and improves UX by keeping picker open until user explicitly confirms.
-                        See: docs/7.bug-fixes/2025-10-11_datepicker-closes-immediately.md
-                      */}
-                      {Platform.OS === 'ios' && (
-                        <Button
-                          action="primary"
-                          size="sm"
-                          onPress={() => setShowFromPicker(false)}
-                          style={{ marginTop: 8 }}
-                        >
-                          <ButtonText>Done</ButtonText>
-                        </Button>
+                  {Platform.OS === 'web' ? (
+                    /* Web: Use HTML5 date input */
+                    <WebDateInput
+                      value={fromDate}
+                      onChange={setFromDate}
+                      max={allowFutureDates ? undefined : new Date().toISOString().split('T')[0]}
+                    />
+                  ) : (
+                    /* Native: Use DateTimePicker */
+                    <>
+                      <TouchableOpacity
+                        onPress={() => setShowFromPicker(!showFromPicker)}
+                        style={styles.dateButton}
+                      >
+                        <Text size="md" color={fromDate ? '$textLight900' : '$textLight400'}>
+                          {fromDate ? formatDate(fromDate) : 'Select start date'}
+                        </Text>
+                        <FontAwesome name={showFromPicker ? "chevron-up" : "chevron-down"} size={12} color="#666" />
+                      </TouchableOpacity>
+                      {showFromPicker && (
+                        <View style={styles.pickerWrapper}>
+                          <DateTimePicker
+                            value={fromDate || new Date()}
+                            mode="date"
+                            display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                            themeVariant={colorScheme}
+                            onChange={(event, date) => {
+                              if (Platform.OS === 'ios') {
+                                // On iOS, update state but keep picker open
+                                if (date) setFromDate(date);
+                              } else {
+                                // On Android, close after selection
+                                if (event.type === 'set' && date) {
+                                  setFromDate(date);
+                                  setShowFromPicker(false);
+                                } else if (event.type === 'dismissed') {
+                                  setShowFromPicker(false);
+                                }
+                              }
+                            }}
+                            maximumDate={allowFutureDates ? undefined : new Date()}
+                          />
+                          {/* 
+                            iOS-specific Done button (Bug fix: 2025-10-11)
+                            iOS UIDatePicker in spinner mode fires onChange continuously as user scrolls.
+                            Without this button, picker would close after each component change (month/day/year),
+                            requiring users to reopen it multiple times. This Done button matches native iOS
+                            behavior and improves UX by keeping picker open until user explicitly confirms.
+                            See: docs/7.bug-fixes/2025-10-11_datepicker-closes-immediately.md
+                          */}
+                          {Platform.OS === 'ios' && (
+                            <Button
+                              action="primary"
+                              size="sm"
+                              onPress={() => setShowFromPicker(false)}
+                              style={{ marginTop: 8 }}
+                            >
+                              <ButtonText>Done</ButtonText>
+                            </Button>
+                          )}
+                        </View>
                       )}
-                    </View>
+                    </>
                   )}
                 </View>
 
@@ -328,58 +345,76 @@ export default function DateRangeList({
                       {endDateNote}
                     </Text>
                   )}
-                  <TouchableOpacity
-                    onPress={() => setShowToPicker(!showToPicker)}
-                    style={styles.dateButton}
-                  >
-                    <Text size="md" color={toDate ? '$textLight900' : '$textLight400'}>
-                      {toDate ? formatDate(toDate) : 'Select end date'}
-                    </Text>
-                    <FontAwesome name={showToPicker ? "chevron-up" : "chevron-down"} size={12} color="#666" />
-                  </TouchableOpacity>
-                  {showToPicker && (
-                    <View style={styles.pickerWrapper}>
-                      <DateTimePicker
-                        value={toDate || new Date()}
-                        mode="date"
-                        display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-                        onChange={(event, date) => {
-                          if (Platform.OS === 'ios') {
-                            // On iOS, update state but keep picker open
-                            if (date) setToDate(date);
-                          } else {
-                            // On Android, close after selection
-                            if (event.type === 'set' && date) {
-                              setToDate(date);
-                              setShowToPicker(false);
-                            } else if (event.type === 'dismissed') {
-                              setShowToPicker(false);
-                            }
-                          }
-                        }}
-                        maximumDate={allowFutureDates ? undefined : new Date()}
-                      />
-                      {/* iOS-specific Done button - see comment on fromDate picker above */}
-                      {Platform.OS === 'ios' && (
-                        <Button
-                          action="primary"
-                          size="sm"
-                          onPress={() => setShowToPicker(false)}
-                          style={{ marginTop: 8 }}
-                        >
-                          <ButtonText>Done</ButtonText>
-                        </Button>
+                  {Platform.OS === 'web' ? (
+                    /* Web: Use HTML5 date input */
+                    <WebDateInput
+                      value={toDate}
+                      onChange={setToDate}
+                      max={allowFutureDates ? undefined : new Date().toISOString().split('T')[0]}
+                    />
+                  ) : (
+                    /* Native: Use DateTimePicker */
+                    <>
+                      <TouchableOpacity
+                        onPress={() => setShowToPicker(!showToPicker)}
+                        style={styles.dateButton}
+                      >
+                        <Text size="md" color={toDate ? '$textLight900' : '$textLight400'}>
+                          {toDate ? formatDate(toDate) : 'Select end date'}
+                        </Text>
+                        <FontAwesome name={showToPicker ? "chevron-up" : "chevron-down"} size={12} color="#666" />
+                      </TouchableOpacity>
+                      {showToPicker && (
+                        <View style={styles.pickerWrapper}>
+                          <DateTimePicker
+                            value={toDate || new Date()}
+                            mode="date"
+                            display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                            themeVariant={colorScheme}
+                            onChange={(event, date) => {
+                              if (Platform.OS === 'ios') {
+                                // On iOS, update state but keep picker open
+                                if (date) setToDate(date);
+                              } else {
+                                // On Android, close after selection
+                                if (event.type === 'set' && date) {
+                                  setToDate(date);
+                                  setShowToPicker(false);
+                                } else if (event.type === 'dismissed') {
+                                  setShowToPicker(false);
+                                }
+                              }
+                            }}
+                            maximumDate={allowFutureDates ? undefined : new Date()}
+                          />
+                          {/* iOS-specific Done button - see comment on fromDate picker above */}
+                          {Platform.OS === 'ios' && (
+                            <Button
+                              action="primary"
+                              size="sm"
+                              onPress={() => setShowToPicker(false)}
+                              style={{ marginTop: 8 }}
+                            >
+                              <ButtonText>Done</ButtonText>
+                            </Button>
+                          )}
+                        </View>
                       )}
-                    </View>
+                    </>
                   )}
                 </View>
 
                 {/* Additional Fields */}
                 {fields.map((field) => (
                   <View key={field.name}>
-                    <Text size="sm" fontWeight="$medium" mb="$2">
+                    <Text size="sm" fontWeight="$medium" mb={field.note ? 0 : "$2"}>
                       {field.label} {field.required && '*'}
                     </Text>
+                    {field.note && (
+                      <Text size="xs" color="$textLight600" mb="$2" style={{ fontStyle: 'italic' }}>
+                        {field.note}
+                      </Text>
+                    )}
                     {field.type === 'text' ? (
                       <Input variant="outline">
                         <InputField

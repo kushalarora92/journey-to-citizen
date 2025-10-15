@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { StyleSheet, ScrollView, TouchableOpacity, Alert, Platform, TextInput, Modal } from 'react-native';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import DateTimePicker from '@react-native-community/datetimepicker';
+import WebDateInput from '@/components/WebDateInput';
+import { useColorScheme } from '@/components/useColorScheme';
 
 import { Text, View } from '@/components/Themed';
 import { useAuth } from '@/context/AuthContext';
@@ -15,6 +17,7 @@ import {
 } from '@/utils/dateRangeValidation';
 
 export default function TabTwoScreen() {
+  const colorScheme = useColorScheme();
   const { user, userProfile, profileLoading, sendVerificationEmail, updateLocalProfile } = useAuth();
   const { updateUserProfile } = useFirebaseFunctions();
   const [isEditingName, setIsEditingName] = useState(false);
@@ -367,49 +370,62 @@ export default function TabTwoScreen() {
                 <Text style={[styles.helpText, { marginTop: 4, marginBottom: 8 }]}>
                   Refer to the back of your PR Card or Confirmation of PR document
                 </Text>
-                <TouchableOpacity
-                  onPress={() => setShowPRDatePicker(true)}
-                  style={styles.dateButton}
-                >
-                  <Text style={styles.dateButtonText}>
-                    {editedPRDate ? formatDate(editedPRDate) : 'Select PR date'}
-                  </Text>
-                </TouchableOpacity>
-                {showPRDatePicker && (
-                  <View>
-                    <DateTimePicker
-                      value={editedPRDate || new Date()}
-                      mode="date"
-                      display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-                      onChange={(event, date) => {
-                        if (Platform.OS === 'ios') {
-                          // On iOS, update state but keep picker open
-                          if (date) setEditedPRDate(date);
-                        } else {
-                          // On Android, close after selection
-                          setShowPRDatePicker(false);
-                          if (date && event.type !== 'dismissed') {
-                            setEditedPRDate(date);
-                          }
-                        }
-                      }}
-                      maximumDate={new Date()}
-                    />
-                    {/* 
-                      iOS-specific Done button (Bug fix: 2025-10-11)
-                      Keeps picker open until user confirms, preventing it from closing
-                      after each month/day/year change. Matches native iOS picker behavior.
-                      See: docs/7.bug-fixes/2025-10-11_datepicker-closes-immediately.md
-                    */}
-                    {Platform.OS === 'ios' && (
-                      <TouchableOpacity
-                        style={[styles.button, styles.saveButton, { marginTop: 8 }]}
-                        onPress={() => setShowPRDatePicker(false)}
-                      >
-                        <Text style={styles.saveButtonText}>Done</Text>
-                      </TouchableOpacity>
+                {Platform.OS === 'web' ? (
+                  /* Web: Use HTML5 date input */
+                  <WebDateInput
+                    value={editedPRDate}
+                    onChange={setEditedPRDate}
+                    max={new Date().toISOString().split('T')[0]}
+                  />
+                ) : (
+                  /* Native: Use DateTimePicker */
+                  <>
+                    <TouchableOpacity
+                      onPress={() => setShowPRDatePicker(true)}
+                      style={styles.dateButton}
+                    >
+                      <Text style={styles.dateButtonText}>
+                        {editedPRDate ? formatDate(editedPRDate) : 'Select PR date'}
+                      </Text>
+                    </TouchableOpacity>
+                    {showPRDatePicker && (
+                      <View>
+                        <DateTimePicker
+                          value={editedPRDate || new Date()}
+                          mode="date"
+                          display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                          themeVariant={colorScheme}
+                          onChange={(event, date) => {
+                            if (Platform.OS === 'ios') {
+                              // On iOS, update state but keep picker open
+                              if (date) setEditedPRDate(date);
+                            } else {
+                              // On Android, close after selection
+                              setShowPRDatePicker(false);
+                              if (date && event.type !== 'dismissed') {
+                                setEditedPRDate(date);
+                              }
+                            }
+                          }}
+                          maximumDate={new Date()}
+                        />
+                        {/* 
+                          iOS-specific Done button (Bug fix: 2025-10-11)
+                          Keeps picker open until user confirms, preventing it from closing
+                          after each month/day/year change. Matches native iOS picker behavior.
+                          See: docs/7.bug-fixes/2025-10-11_datepicker-closes-immediately.md
+                        */}
+                        {Platform.OS === 'ios' && (
+                          <TouchableOpacity
+                            style={[styles.button, styles.saveButton, { marginTop: 8 }]}
+                            onPress={() => setShowPRDatePicker(false)}
+                          >
+                            <Text style={styles.saveButtonText}>Done</Text>
+                          </TouchableOpacity>
+                        )}
+                      </View>
                     )}
-                  </View>
+                  </>
                 )}
                 <View style={styles.editButtons}>
                   <TouchableOpacity
@@ -460,6 +476,7 @@ export default function TabTwoScreen() {
                   type: 'select',
                   options: Object.values(PURPOSE_OF_STAY_LABELS),
                   required: true,
+                  note: 'Select the legal status you held during this period',
                 },
               ]}
               allowFutureDates={false}
