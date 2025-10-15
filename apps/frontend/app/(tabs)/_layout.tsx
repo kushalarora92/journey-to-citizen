@@ -7,6 +7,7 @@ import Colors from '@/constants/Colors';
 import { useColorScheme } from '@/components/useColorScheme';
 import { useClientOnlyValue } from '@/components/useClientOnlyValue';
 import { useAuth } from '@/context/AuthContext';
+import WebNavigationBar from '@/components/WebNavigationBar';
 
 // You can explore the built-in icon families and icons on the web at https://icons.expo.fyi/
 function TabBarIcon(props: {
@@ -70,6 +71,10 @@ export default function TabLayout() {
         // to prevent a hydration error in React Navigation v6.
         headerShown: useClientOnlyValue(false, true),
         headerTitleAlign: 'center',
+        // Hide tab bar on web (navigation is in header instead)
+        tabBarStyle: Platform.OS === 'web' ? { display: 'none' } : undefined,
+        // Custom header title component for web (shows navigation)
+        headerTitle: Platform.OS === 'web' ? () => <WebNavigationBar /> : undefined,
       }}>
       <Tabs.Screen
         name="index"
