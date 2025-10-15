@@ -4,9 +4,9 @@ import { useFonts } from 'expo-font';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect } from 'react';
-import { StatusBar, StyleSheet } from 'react-native';
+import { StatusBar, StyleSheet, ActivityIndicator } from 'react-native';
 import 'react-native-reanimated';
-import { GluestackUIProvider, View } from '@gluestack-ui/themed';
+import { GluestackUIProvider, View, Text } from '@gluestack-ui/themed';
 import { config } from '../gluestack-ui.config';
 
 import { useColorScheme } from '@/components/useColorScheme';
@@ -34,7 +34,7 @@ function RootLayoutNav() {
   const router = useRouter();
 
   useEffect(() => {
-    if (loading || profileLoading) return;
+    if (loading || profileLoading) return; // Wait for both auth and profile to load
 
     const inAuthGroup = segments[0] === 'auth';
     const inVerifyEmailScreen = segments[1] === 'verify-email';
@@ -54,10 +54,23 @@ function RootLayoutNav() {
         router.replace('/profile-setup' as any);
       }
     } else if (user && user.emailVerified && !needsProfileSetup && (inAuthGroup || inProfileSetupScreen)) {
-      // Redirect to tabs if user is authenticated, verified, and has completed profile
+      // Only redirect to tabs if user is in auth/setup screens, not if already in tabs
       router.replace('/(tabs)');
     }
+    // If already in tabs group, don't redirect - let them stay on current tab
   }, [user, loading, needsProfileSetup, profileLoading, segments]);
+
+  // Show loading screen while auth state and profile are being determined
+  if (loading || profileLoading) {
+    return (
+      <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+        <View style={[styles.rootContainer, styles.centered, { backgroundColor: Colors[colorScheme].background }]}>
+          <ActivityIndicator size="large" color={Colors[colorScheme].tint} />
+          <Text size="sm" style={{ marginTop: 16, color: Colors[colorScheme].text }}>Loading...</Text>
+        </View>
+      </ThemeProvider>
+    );
+  }
 
   return (
     <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
@@ -113,5 +126,9 @@ export default function RootLayout() {
 const styles = StyleSheet.create({
   rootContainer: {
     flex: 1,
+  },
+  centered: {
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 });
