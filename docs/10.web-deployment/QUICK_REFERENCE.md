@@ -28,6 +28,18 @@ cd ../..
 firebase deploy --only hosting
 ```
 
+### Via GitHub Actions (CI/CD)
+```bash
+# Trigger manual deployment from GitHub UI:
+# 1. Go to Actions tab
+# 2. Select "Deploy Web to Firebase Hosting"
+# 3. Click "Run workflow"
+# 4. Choose environment (production/preview)
+# 5. Click "Run workflow" button
+```
+
+See [GitHub Actions CI/CD Guide](./3.2025-10-16_github-actions-ci-cd.md) for setup instructions.
+
 ## Build Output
 - **Location:** `apps/frontend/web-build/`
 - **Bundle Size:** ~4.05 MB (minified JS)
@@ -110,6 +122,23 @@ firebase emulators:start --only hosting
 - ✅ Fixed icon loading issue (OTS parsing error)
 - ✅ Added CORS headers for fonts
 - ✅ Deployed to production
+- ✅ GitHub Actions CI/CD workflow configured
+
+## CI/CD Setup
+
+### GitHub Secrets Required
+Configure these in GitHub Settings → Secrets and variables → Actions:
+- `EXPO_PUBLIC_FIREBASE_API_KEY`
+- `EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN`
+- `EXPO_PUBLIC_FIREBASE_PROJECT_ID`
+- `EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET`
+- `EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID`
+- `EXPO_PUBLIC_FIREBASE_APP_ID`
+- `EXPO_PUBLIC_FIREBASE_MEASUREMENT_ID`
+- `FIREBASE_SERVICE_ACCOUNT` (JSON service account key)
+- `FIREBASE_PROJECT_ID`
+
+See [GitHub Actions Setup Guide](./3.2025-10-16_github-actions-ci-cd.md) for detailed instructions.
 
 ## Environment Variables
 All `EXPO_PUBLIC_*` variables are automatically included in web builds:
@@ -122,5 +151,7 @@ All `EXPO_PUBLIC_*` variables are automatically included in web builds:
 ## Resources
 - [Firebase Console](https://console.firebase.google.com/project/journey-to-citizen/overview)
 - [Hosting Dashboard](https://console.firebase.google.com/project/journey-to-citizen/hosting)
+- [GitHub Actions](https://github.com/kushalarora92/journey-to-citizen/actions)
 - [Detailed Setup Guide](./2025-10-16_firebase-hosting-setup.md)
 - [Icon Issue Resolution](./2025-10-16_icon-loading-issue.md)
+- [GitHub Actions CI/CD Guide](./3.2025-10-16_github-actions-ci-cd.md)
