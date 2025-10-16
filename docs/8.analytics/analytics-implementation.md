@@ -49,7 +49,7 @@ Native analytics is automatically initialized when the app starts. No additional
 
 **Environment Variables:**
 ```env
-EXPO_PUBLIC_FIREBASE_MEASUREMENT_ID="G-RLMPDPJ63R"  # Web only
+EXPO_PUBLIC_FIREBASE_MEASUREMENT_ID="YOUR_MEASUREMENT_ID"  # Web only - get from Firebase Console
 ```
 
 **Key Features:**

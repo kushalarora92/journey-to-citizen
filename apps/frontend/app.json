@@ -8,15 +8,23 @@
     "scheme": "journey-to-citizen-app",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
+    "owner": "kodian-labs",
+    "extra": {
+      "eas": {
+        "projectId": "16fd1c91-cd6c-4507-9fb3-3ae48e1530cd"
+      }
+    },
     "splash": {
       "image": "./assets/images/splash-icon.png",
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "googleServicesFile": "./GoogleService-Info.plist"
     },
     "android": {
+      "googleServicesFile": "./google-services.json",
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"
