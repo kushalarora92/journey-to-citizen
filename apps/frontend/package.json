@@ -9,6 +9,7 @@
     "web": "expo start --web",
     "dev": "expo start",
     "postinstall": "cd ../.. && pnpm --filter '@journey-to-citizen/*' --filter '!journey-to-citizen-frontend' build",
+    "build:web": "expo export --platform web --output-dir web-build",
     "build:android:preview": "eas build --platform android --profile preview",
     "build:ios:preview": "eas build --platform ios --profile preview",
     "build:android:prod": "eas build --platform android --profile production",

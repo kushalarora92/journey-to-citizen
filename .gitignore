@@ -24,6 +24,8 @@ web-build
 *.key
 *.pem
 *.p12
+# Local firebase emulator and hosting cache (do not commit)
+.firebase/
 
 # Firebase config files (contain sensitive keys)
 **/google-services.json

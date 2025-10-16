@@ -90,9 +90,11 @@ function RootLayoutNav() {
 
 export default function RootLayout() {
   const colorScheme = useColorScheme();
+  
+  // Load fonts from assets folder to avoid long path issues on Firebase Hosting
   const [loaded, error] = useFonts({
     SpaceMono: require('../assets/fonts/SpaceMono-Regular.ttf'),
-    ...FontAwesome.font,
+    FontAwesome: require('../assets/fonts/FontAwesome.ttf'),
   });
 
   // Expo Router uses Error Boundaries to catch errors in the navigation tree.
