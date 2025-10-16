@@ -133,17 +133,28 @@ export default function VerifyEmailScreen() {
 
         <Box bg="$backgroundLight100" p="$4" borderRadius="$lg" w="100%">
           <Text size="md" fontWeight="$semibold" mb="$3">Next Steps:</Text>
-          <Text size="sm" color="$textLight600" mb="$2">1. Check your email inbox</Text>
+          <VStack space="xs" mb="$2">
+            <Text size="sm" color="$textLight600">1. Check your email inbox</Text>
+            <Text size="xs" color="$textLight500" ml="$4" fontStyle="italic">
+              Not in inbox? Check your spam folder
+            </Text>
+          </VStack>
           <Text size="sm" color="$textLight600" mb="$2">2. Click the verification link</Text>
           <Text size="sm" color="$textLight600">3. Return to the app and sign in</Text>
         </Box>
 
-        <Text size="sm" color="$textLight600" textAlign="center">
-          Didn't receive the email? Check your spam folder or request a new one.
-        </Text>
-
         <Button
           size="lg"
+          onPress={handleBackToSignIn}
+          isDisabled={loading}
+        >
+          <ButtonText>Back to Sign In</ButtonText>
+        </Button>
+
+        <Button
+          size="md"
+          variant="outline"
+          action="secondary"
           onPress={handleResendEmail}
           isDisabled={loading || cooldown > 0}
         >
@@ -155,14 +166,6 @@ export default function VerifyEmailScreen() {
               : 'Resend Verification Email'}
           </ButtonText>
         </Button>
-
-        <Link
-          onPress={handleBackToSignIn}
-          isDisabled={loading}
-          alignSelf="center"
-        >
-          <LinkText size="md">Back to Sign In</LinkText>
-        </Link>
       </VStack>
     </Box>
   );
