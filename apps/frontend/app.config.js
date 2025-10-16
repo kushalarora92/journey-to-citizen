@@ -23,6 +23,9 @@ module.exports = {
       supportsTablet: true,
       bundleIdentifier: 'com.kodianlabs.journeytocitizen',
       googleServicesFile: process.env.GOOGLE_SERVICE_INFO_PLIST || './GoogleService-Info.plist',
+      infoPlist: {
+        ITSAppUsesNonExemptEncryption: false,
+      },
     },
     android: {
       adaptiveIcon: {
