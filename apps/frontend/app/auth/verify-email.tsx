@@ -121,17 +121,6 @@ export default function VerifyEmailScreen() {
       <VStack space="lg" maxWidth={400} width="100%" alignSelf="center" gap={"$8"}>
         <AuthBranding />
         <VStack space="md" alignItems="center">
-          <Box
-            w={80}
-            h={80}
-            borderRadius="$full"
-            bg="$blue100"
-            justifyContent="center"
-            alignItems="center"
-            mb="$4"
-          >
-            <Text fontSize={40}>✉️</Text>
-          </Box>
 
           <Heading size="2xl" textAlign="center">Verify Your Email</Heading>
           <Text size="md" color="$textLight600" textAlign="center">
