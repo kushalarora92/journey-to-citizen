@@ -11,11 +11,13 @@ import {
   formatDate, 
   formatDaysRemaining 
 } from '@/utils/eligibilityCalculations';
+import { useIsDesktop } from '@/utils/responsive';
 
 export default function TabOneScreen() {
   const router = useRouter();
   const { user, userProfile, profileLoading } = useAuth();
   const { trackEvent } = useAnalytics();
+  const isDesktop = useIsDesktop('md');
   
   // Track screen view
   useScreenTracking('Dashboard');
@@ -98,7 +100,12 @@ export default function TabOneScreen() {
             <FontAwesome name="info-circle" size={32} color="#3b82f6" style={{ marginBottom: 12 }} />
             <Text style={styles.incompleteTitle}>Complete Your Profile</Text>
             <Text style={styles.incompleteText}>
-              Add your PR date and immigration details to see your citizenship eligibility.
+              Add your PR date (even tentative) and immigration details to see your citizenship eligibility.
+              {!isDesktop && '\n\n'}
+              {isDesktop && ' '}
+              This app is designed for permanent residents working towards Canadian citizenship.
+              {'\n\n'}
+              <Text style={styles.comingSoonText}>Other statuses (visitor, student, worker) coming soon!</Text>
             </Text>
             <TouchableOpacity 
               style={styles.completeButton}
@@ -402,6 +409,12 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginBottom: 20,
     lineHeight: 20,
+  },
+  comingSoonText: {
+    fontSize: 13,
+    color: '#3b82f6',
+    fontWeight: '600',
+    fontStyle: 'italic',
   },
   completeButton: {
     flexDirection: 'row',
