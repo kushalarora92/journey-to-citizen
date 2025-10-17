@@ -9,6 +9,7 @@ import { useClientOnlyValue } from '@/components/useClientOnlyValue';
 import { useAuth } from '@/context/AuthContext';
 import { useAnalytics } from '@/hooks/useAnalytics';
 import WebNavigationBar from '@/components/WebNavigationBar';
+import { useIsDesktop } from '@/utils/responsive';
 
 // You can explore the built-in icon families and icons on the web at https://icons.expo.fyi/
 function TabBarIcon(props: {
@@ -47,6 +48,9 @@ export default function TabLayout() {
   const { logout } = useAuth();
   const pathname = usePathname();
   const { trackEvent } = useAnalytics();
+  
+  // Track screen width for responsive layout (768px breakpoint for tablet/desktop)
+  const isDesktop = useIsDesktop('md');
 
   const handleLogout = () => {
     trackEvent('logout_button_click', {
@@ -91,9 +95,9 @@ export default function TabLayout() {
         // to prevent a hydration error in React Navigation v6.
         headerShown: useClientOnlyValue(false, true),
         headerTitleAlign: 'center',
-        // Hide tab bar on web (navigation is in header instead)
-        // Add subtle shadow/elevation to bottom tabs on native
-        tabBarStyle: Platform.OS === 'web' 
+        // Hide tab bar on desktop web (navigation is in header instead)
+        // Show tab bar on mobile web and native
+        tabBarStyle: (Platform.OS === 'web' && isDesktop)
           ? { display: 'none' } 
           : {
               shadowColor: Colors[colorScheme ?? 'light'].text,
@@ -104,10 +108,11 @@ export default function TabLayout() {
               borderTopWidth: 0,
             },
         
-        // Show logo on left side of header on native
+        // Show logo on left side of header
         headerLeft: () => <HeaderLogo />,
-        // Custom header title component for web (shows navigation)
-        headerTitle: Platform.OS === 'web' ? () => <WebNavigationBar /> : undefined,
+        // Custom header title component for desktop web (shows navigation)
+        // On mobile web and native, use default title
+        headerTitle: (Platform.OS === 'web' && isDesktop) ? () => <WebNavigationBar /> : undefined,
 
         // Add logout button on right side of header
         headerRight: () => (
