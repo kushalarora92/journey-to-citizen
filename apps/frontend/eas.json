@@ -6,16 +6,22 @@
   "build": {
     "development": {
       "developmentClient": true,
-  "distribution": "internal"
-      // No file secret env vars needed; EAS handles file secrets automatically
+      "distribution": "internal",
+      "ios": {
+        "buildConfiguration": "Debug"
+      }
     },
     "preview": {
-  "distribution": "internal"
-      // No file secret env vars needed; EAS handles file secrets automatically
+      "distribution": "internal",
+      "ios": {
+        "buildConfiguration": "Release"
+      }
     },
     "production": {
-  "autoIncrement": true
-      // No file secret env vars needed; EAS handles file secrets automatically
+      "autoIncrement": true,
+      "ios": {
+        "buildConfiguration": "Release"
+      }
     }
   },
   "submit": {
