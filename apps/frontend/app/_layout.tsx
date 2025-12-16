@@ -39,9 +39,10 @@ function RootLayoutNav() {
     const inAuthGroup = segments[0] === 'auth';
     const inVerifyEmailScreen = segments[1] === 'verify-email';
     const inProfileSetupScreen = segments[0] === 'profile-setup';
+    const inPublicPage = segments[0] === 'privacy' || segments[0] === 'support';
 
-    if (!user && !inAuthGroup) {
-      // Redirect to sign-in if user is not authenticated
+    if (!user && !inAuthGroup && !inPublicPage) {
+      // Redirect to sign-in if user is not authenticated (except for public pages)
       router.replace('/auth/sign-in' as any);
     } else if (user && !user.emailVerified) {
       // Redirect to verify-email if user is not verified (unless already there)
