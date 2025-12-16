@@ -31,6 +31,11 @@ web-build
 **/google-services.json
 **/GoogleService-Info.plist
 
+# Play Store / App Store credentials
+**/pc-api-*.json
+**/play-store-*.json
+**/app-store-*.p8
+
 # IDE
 .vscode
 .idea
