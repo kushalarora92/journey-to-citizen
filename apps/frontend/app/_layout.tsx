@@ -39,7 +39,7 @@ function RootLayoutNav() {
     const inAuthGroup = segments[0] === 'auth';
     const inVerifyEmailScreen = segments[1] === 'verify-email';
     const inProfileSetupScreen = segments[0] === 'profile-setup';
-    const inPublicPage = segments[0] === 'privacy' || segments[0] === 'support';
+    const inPublicPage = segments[0] === 'privacy' || segments[0] === 'support' || segments[0] === 'delete-account';
 
     if (!user && !inAuthGroup && !inPublicPage) {
       // Redirect to sign-in if user is not authenticated (except for public pages)
