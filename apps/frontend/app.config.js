@@ -2,7 +2,7 @@ module.exports = {
   expo: {
     name: 'Journey to Citizen',
     slug: 'journey-to-citizen',
-    version: '1.0.0',
+    version: '1.0.1',
     orientation: 'portrait',
     icon: './assets/images/icon.png',
     scheme: 'journey-to-citizen',
@@ -57,6 +57,12 @@ module.exports = {
     ],
     experiments: {
       typedRoutes: true,
+    },
+    updates: {
+      url: 'https://u.expo.dev/16fd1c91-cd6c-4507-9fb3-3ae48e1530cd',
+    },
+    runtimeVersion: {
+      policy: 'sdkVersion',
     },
   },
 };

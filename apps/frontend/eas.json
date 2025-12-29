@@ -15,13 +15,15 @@
       "distribution": "internal",
       "ios": {
         "buildConfiguration": "Release"
-      }
+      },
+      "channel": "preview"
     },
     "production": {
       "autoIncrement": true,
       "ios": {
         "buildConfiguration": "Release"
-      }
+      },
+      "channel": "production"
     }
   },
   "submit": {

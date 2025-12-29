@@ -51,7 +51,7 @@ export default function TabOneScreen() {
           has_display_name: !!displayName,
         })}
       >
-        <Text style={styles.greeting}>Welcome, eh!</Text>
+        <Text style={styles.greeting}>Welcome, eh! 🍁</Text>
         <Text style={styles.name}>
           {profileLoading ? '...' : displayName} 👋
         </Text>
