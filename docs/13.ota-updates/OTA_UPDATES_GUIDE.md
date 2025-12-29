@@ -22,7 +22,10 @@ EAS Updates allows you to push JavaScript/TypeScript changes to production apps 
 Your app is configured with:
 - **Production channel**: `production` (for App Store/Play Store releases)
 - **Preview channel**: `preview` (for internal testing)
-- **Runtime version**: Based on app version (1.0.0)
+- **Runtime version**: Based on Expo SDK version (`sdkVersion` policy)
+  - All apps on Expo SDK 54 receive same updates
+  - Works across all app versions (1.0.0, 1.0.1, 1.0.2, etc.)
+  - Updates only when you upgrade Expo SDK (e.g., 54 → 55)
 
 ## Publishing Updates
 
@@ -89,11 +92,12 @@ eas update:republish --branch production --group <previous-group-id>
 - Development builds don't receive OTA updates
 - Users must restart the app to see updates
 - Updates are cached, so users get them even offline (next time)
+- **Runtime version based on Expo SDK**: All users on SDK 54 get updates, regardless of app version (1.0.0, 1.0.1, etc.)
 
 ## Common Issues
 
 ### Update not showing
-- **Check runtime version**: Must match the build
+- **Check Expo SDK version**: Runtime is tied to SDK, not app version
 - **Restart app**: Updates apply on restart
 - **Check channel**: Ensure device is on correct channel
 

@@ -3,12 +3,16 @@ import {
   getAuth, 
   Auth,
   setPersistence,
-  browserLocalPersistence
+  browserLocalPersistence,
+  initializeAuth
 } from 'firebase/auth';
+// @ts-ignore - React Native persistence module
+import { getReactNativePersistence } from 'firebase/auth';
 import { getFirestore, Firestore, connectFirestoreEmulator } from 'firebase/firestore';
 import { getFunctions, Functions, connectFunctionsEmulator } from 'firebase/functions';
 import { getAnalytics, Analytics, isSupported } from 'firebase/analytics';
 import { Platform } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // Expo automatically exposes environment variables with EXPO_PUBLIC_ prefix
 const firebaseConfig = {
@@ -34,23 +38,25 @@ if (missingKeys.length > 0) {
 // Initialize Firebase
 const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
 
-// Initialize Auth
-const auth: Auth = getAuth(app);
+// Initialize Auth with platform-specific persistence
+let auth: Auth;
 
-// Set persistence for React Native
-// Note: In Expo/React Native, Firebase Auth uses AsyncStorage automatically for persistence
-// For web, we explicitly set browserLocalPersistence
 if (Platform.OS === 'web') {
+  // Use getAuth for web (uses localStorage automatically)
+  auth = getAuth(app);
   setPersistence(auth, browserLocalPersistence)
     .then(() => {
-      console.log('✓ Firebase Auth persistence enabled (web)');
+      console.log('✓ Firebase Auth persistence enabled (web - localStorage)');
     })
     .catch((error) => {
       console.warn('Failed to set auth persistence:', error);
     });
 } else {
-  // React Native automatically persists auth state
-  console.log('✓ Firebase Auth persistence enabled (React Native - automatic)');
+  // Use initializeAuth with AsyncStorage for React Native
+  auth = initializeAuth(app, {
+    persistence: getReactNativePersistence(AsyncStorage)
+  });
+  console.log('✓ Firebase Auth persistence enabled (React Native - AsyncStorage)');
 }
 
 // Initialize Firestore
