@@ -2,7 +2,7 @@ module.exports = {
   expo: {
     name: 'Journey to Citizen',
     slug: 'journey-to-citizen',
-    version: '1.0.1',
+    version: '1.0.2',
     orientation: 'portrait',
     icon: './assets/images/icon.png',
     scheme: 'journey-to-citizen',
