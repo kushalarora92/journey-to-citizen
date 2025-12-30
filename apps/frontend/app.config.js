@@ -20,6 +20,7 @@ module.exports = {
       backgroundColor: '#ffffff',
     },
     ios: {
+      version: '1.0',
       supportsTablet: true,
       bundleIdentifier: 'com.kodianlabs.journeytocitizen',
       googleServicesFile: process.env.GOOGLE_SERVICE_INFO_PLIST || './GoogleService-Info.plist',
@@ -28,6 +29,7 @@ module.exports = {
       },
     },
     android: {
+      versionName: '1.0',
       adaptiveIcon: {
         foregroundImage: './assets/images/adaptive-icon.png',
         backgroundColor: '#ffffff',
