@@ -151,10 +151,10 @@ export default function PrivacyPolicyScreen() {
               <Heading size="lg">Analytics</Heading>
               <Text>We use Firebase Analytics to understand how users interact with the app:</Text>
               <VStack space="xs" ml="$4">
-                <Text>• <Text fontWeight="$bold">Data Collected:</Text> Screen views, button clicks, feature usage</Text>
-                <Text>• <Text fontWeight="$bold">Purpose:</Text> Improve user experience and fix issues</Text>
-                <Text>• <Text fontWeight="$bold">Anonymous:</Text> Analytics data is not linked to your personal information</Text>
-                <Text>• <Text fontWeight="$bold">Opt-Out:</Text> Available in app settings (coming soon)</Text>
+                <Text>• <Text fontWeight="$bold">Data Collected:</Text> Screen views, button clicks, feature usage, and device identifiers including Advertising ID</Text>
+                <Text>• <Text fontWeight="$bold">Purpose:</Text> Analytics to improve user experience, fix issues, and understand app usage patterns</Text>
+                <Text>• <Text fontWeight="$bold">Anonymous:</Text> Analytics data is aggregated and not linked to your personal information</Text>
+                <Text>• <Text fontWeight="$bold">User Control:</Text> You can reset your Advertising ID or limit ad tracking in your device settings</Text>
               </VStack>
             </VStack>
 
