@@ -47,6 +47,7 @@ module.exports = {
     plugins: [
       'expo-router',
       '@react-native-firebase/app',
+      '@react-native-google-signin/google-signin',
       [
         'expo-build-properties',
         {

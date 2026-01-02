@@ -18,15 +18,18 @@ import {
   FormControlErrorText,
   Link,
   LinkText,
+  Divider,
 } from '@gluestack-ui/themed';
 import { AuthBranding } from '@/components/AuthBranding';
+import { GoogleSignInButton } from '@/components/GoogleSignInButton';
 
 export default function SignInScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
   const [error, setError] = useState('');
-  const { signIn } = useAuth();
+  const { signIn, signInWithGoogle } = useAuth();
 
   const handleSignIn = async () => {
     if (!email || !password) {
@@ -62,6 +65,35 @@ export default function SignInScreen() {
       }
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleGoogleSignIn = async () => {
+    setGoogleLoading(true);
+    setError('');
+
+    try {
+      await signInWithGoogle();
+      // Navigation is handled by _layout.tsx
+    } catch (err: any) {
+      console.error('Google sign in error:', err);
+      
+      let errorMessage = err.message || 'Failed to sign in with Google';
+      
+      // Don't show error for user cancellation
+      if (errorMessage === 'Sign in was cancelled') {
+        setGoogleLoading(false);
+        return;
+      }
+      
+      setError(errorMessage);
+      
+      // Show alert on mobile
+      if (Platform.OS !== 'web') {
+        Alert.alert('Google Sign In Error', errorMessage);
+      }
+    } finally {
+      setGoogleLoading(false);
     }
   };
 
@@ -128,10 +160,24 @@ export default function SignInScreen() {
               <Button
                 size="lg"
                 onPress={handleSignIn}
-                isDisabled={loading}
+                isDisabled={loading || googleLoading}
               >
                 <ButtonText>{loading ? 'Signing In...' : 'Sign In'}</ButtonText>
               </Button>
+
+              {/* Divider with "or" text */}
+              <Box flexDirection="row" alignItems="center" gap="$3">
+                <Divider flex={1} />
+                <Text size="sm" color="$textLight500">or</Text>
+                <Divider flex={1} />
+              </Box>
+
+              {/* Google Sign-In Button */}
+              <GoogleSignInButton
+                onPress={handleGoogleSignIn}
+                isLoading={googleLoading}
+                label="Continue with Google"
+              />
 
               <Link
                 onPress={() => router.push('/auth/forgot-password' as any)}

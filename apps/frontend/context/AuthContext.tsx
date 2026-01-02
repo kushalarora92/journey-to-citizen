@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
+import { Platform } from 'react-native';
 import {
   User,
   createUserWithEmailAndPassword,
@@ -7,11 +8,33 @@ import {
   sendPasswordResetEmail,
   sendEmailVerification,
   onAuthStateChanged,
+  GoogleAuthProvider,
+  signInWithPopup,
+  signInWithCredential,
 } from 'firebase/auth';
 import { auth } from '@/config/firebase';
 import { useFirebaseFunctions } from '@/hooks/useFirebaseFunctions';
 import { useAnalytics } from '@/hooks/useAnalytics';
 import { UserProfile } from '@journey-to-citizen/types';
+
+// Conditionally import Google Sign-In for native platforms
+// Wrapped in try-catch to handle Expo Go where native modules aren't available
+let GoogleSignin: any = null;
+let statusCodes: any = null;
+let isGoogleSignInAvailable = false;
+
+if (Platform.OS !== 'web') {
+  try {
+    const googleSignInModule = require('@react-native-google-signin/google-signin');
+    GoogleSignin = googleSignInModule.GoogleSignin;
+    statusCodes = googleSignInModule.statusCodes;
+    isGoogleSignInAvailable = true;
+  } catch (error) {
+    console.debug('Google Sign-In native module not available (running in Expo Go?)');
+    console.log('Google Sign-In native module not available on this platform');
+    isGoogleSignInAvailable = false;
+  }
+}
 
 interface AuthContextType {
   user: User | null;
@@ -20,6 +43,7 @@ interface AuthContextType {
   profileLoading: boolean;
   signUp: (email: string, password: string) => Promise<void>;
   signIn: (email: string, password: string) => Promise<void>;
+  signInWithGoogle: () => Promise<void>;
   logout: () => Promise<void>;
   resetPassword: (email: string) => Promise<void>;
   sendVerificationEmail: () => Promise<void>;
@@ -45,6 +69,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [profileLoading, setProfileLoading] = useState(false);
   const { getUserInfo } = useFirebaseFunctions();
   const { setAnalyticsUserId, setAnalyticsUserProperties, trackEvent } = useAnalytics();
+
+  // Configure Google Sign-In for native platforms (only if available)
+  useEffect(() => {
+    if (Platform.OS !== 'web' && isGoogleSignInAvailable && GoogleSignin) {
+      GoogleSignin.configure({
+        // Web client ID from environment variable
+        webClientId: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID,
+        offlineAccess: false,
+      });
+    }
+  }, []);
 
   // Fetch user profile from Firestore
   const fetchUserProfile = async (currentUser: User) => {
@@ -121,8 +156,103 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     });
   };
 
+  const signInWithGoogle = async () => {
+    if (Platform.OS === 'web') {
+      // Web: Use Firebase's signInWithPopup
+      const provider = new GoogleAuthProvider();
+      provider.addScope('email');
+      provider.addScope('profile');
+      
+      try {
+        const result = await signInWithPopup(auth, provider);
+        
+        // Profile will be fetched automatically by onAuthStateChanged
+        // Google users always have verified emails
+        if (result.user) {
+          await fetchUserProfile(result.user);
+        }
+        
+        // Track login event
+        trackEvent('login', {
+          method: 'google',
+        });
+      } catch (error: any) {
+        // Handle account exists with different credential
+        // Currently, Firebase setting enabled that allow linking of accounts. Check is just for the future.
+        if (error.code === 'auth/account-exists-with-different-credential') {
+          throw new Error('An account already exists with this email. Please sign in with your email and password instead.');
+        }
+        throw error;
+      }
+    } else {
+      // Native: Use @react-native-google-signin/google-signin
+      if (!isGoogleSignInAvailable || !GoogleSignin) {
+        console.debug('Google Sign-In is not available on this platform. Probably running in Expo Go.');
+        throw new Error('Google Sign-In is not available on this platform. Make sure a legit build is being used.');
+      }
+      
+      try {
+        // Check if Google Play Services are available (Android only)
+        await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
+        
+        // Trigger Google Sign-In flow
+        const signInResult = await GoogleSignin.signIn();
+        
+        // Get the ID token
+        const idToken = signInResult?.data?.idToken;
+        
+        if (!idToken) {
+          throw new Error('No ID token returned from Google Sign-In');
+        }
+        
+        // Create Firebase credential with the Google ID token
+        const googleCredential = GoogleAuthProvider.credential(idToken);
+        
+        // Sign in to Firebase with the credential
+        const result = await signInWithCredential(auth, googleCredential);
+        
+        // Profile will be fetched automatically by onAuthStateChanged
+        if (result.user) {
+          await fetchUserProfile(result.user);
+        }
+        
+        // Track login event
+        trackEvent('login', {
+          method: 'google',
+        });
+      } catch (error: any) {
+        // Handle account exists with different credential
+        if (error.code === 'auth/account-exists-with-different-credential') {
+          throw new Error('An account already exists with this email. Please sign in with your email and password instead.');
+        }
+
+        // Handle specific Google Sign-In errors
+        if (error.code === statusCodes?.SIGN_IN_CANCELLED) {
+          throw new Error('Sign in was cancelled');
+        } else if (error.code === statusCodes?.IN_PROGRESS) {
+          throw new Error('Sign in is already in progress');
+        } else if (error.code === statusCodes?.PLAY_SERVICES_NOT_AVAILABLE) {
+          throw new Error('Google Play Services are not available');
+        } else {
+          throw error;
+        }
+      }
+    }
+  };
+
   const logout = async () => {
     setUserProfile(null);
+    
+    // Sign out from Google on native platforms (only if available)
+    if (Platform.OS !== 'web' && isGoogleSignInAvailable && GoogleSignin) {
+      try {
+        await GoogleSignin.signOut();
+      } catch (error) {
+        // Ignore Google sign-out errors (user might not have signed in with Google)
+        console.log('Google sign-out skipped or failed:', error);
+      }
+    }
+    
     await signOut(auth);
   };
 
@@ -153,6 +283,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     profileLoading,
     signUp,
     signIn,
+    signInWithGoogle,
     logout,
     resetPassword,
     sendVerificationEmail,
