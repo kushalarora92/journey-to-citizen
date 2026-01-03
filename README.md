@@ -136,3 +136,7 @@ Shared packages use the organization name: `@journey-to-citizen`
 - **Functions Guide**: [apps/functions/README.md](apps/functions/README.md)
 - **Development**: Run `./dev.sh` for interactive menu
 
+----
+* ImprovMx for email forwarding
+* EXPO OTA for updates
+* Auth 

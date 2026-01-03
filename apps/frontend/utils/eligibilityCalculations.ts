@@ -1,4 +1,9 @@
 import { UserProfile, EligibilityCalculation } from '@journey-to-citizen/types';
+import { 
+  calculateStaticEligibility, 
+  parseDate as sharedParseDate,
+  DAYS_REQUIRED,
+} from '@journey-to-citizen/calculations';
 
 /**
  * Helper function to parse date string (YYYY-MM-DD) to Date
@@ -8,15 +13,16 @@ function parseDate(dateString: string): Date {
 }
 
 /**
- * Get complete eligibility data combining backend static values with frontend dynamic calculations
+ * Get complete eligibility data by calculating on-the-fly using shared package
  * 
- * Backend stores (updated on profile changes):
- * - daysInCanadaAsPR: Days as PR minus absences (snapshot)
+ * This function calculates eligibility in real-time using the shared calculation
+ * package, ensuring consistency between frontend and backend calculations.
+ * 
+ * Calculated values:
+ * - daysInCanadaAsPR: Days in eligibility window as PR
  * - preDaysCredit: Credit from pre-PR presence (max 365)
  * - totalAbsenceDays: Total days absent
  * - earliestEligibilityDate: When user becomes eligible (date string YYYY-MM-DD)
- * 
- * Frontend calculates dynamically (based on current date):
  * - daysRemaining: Days until eligibility
  * - isEligible: Whether eligible today
  * - progress: Percentage towards eligibility
@@ -24,8 +30,6 @@ function parseDate(dateString: string): Date {
 export function getEligibility(profile: UserProfile | null): EligibilityCalculation & {
   earliestApplicationDate: Date | null;
 } {
-  const DAYS_REQUIRED = 1095;
-  
   const defaultResult: EligibilityCalculation & { earliestApplicationDate: Date | null } = {
     daysInCanadaAsPR: 0,
     preDaysCredit: 0,
@@ -43,13 +47,13 @@ export function getEligibility(profile: UserProfile | null): EligibilityCalculat
     return defaultResult;
   }
 
-  // Check if we have backend-calculated static data
-  if (!profile.staticEligibility) {
-    // No backend data yet (profile just created or calculation failed)
+  // Calculate eligibility on-the-fly using shared package
+  const staticData = calculateStaticEligibility(profile);
+  
+  if (!staticData) {
+    // Calculation returned null (shouldn't happen if prDate exists, but handle it)
     return defaultResult;
   }
-
-  const staticData = profile.staticEligibility;
   
   // Convert earliest eligibility date from date string
   let earliestDate: Date | null = null;
@@ -74,13 +78,13 @@ export function getEligibility(profile: UserProfile | null): EligibilityCalculat
   const progress = Math.min(100, (totalEligibleDays / DAYS_REQUIRED) * 100);
 
   return {
-    // Static data from backend
+    // Calculated data from shared package
     daysInCanadaAsPR: staticData.daysInCanadaAsPR,
     preDaysCredit: staticData.preDaysCredit,
     totalAbsenceDays: staticData.totalAbsenceDays,
     earliestEligibilityDate: staticData.earliestEligibilityDate,
     
-    // Calculated values
+    // Derived values
     totalEligibleDays,
     daysRequired: DAYS_REQUIRED,
     daysRemaining,
@@ -91,15 +95,13 @@ export function getEligibility(profile: UserProfile | null): EligibilityCalculat
 }
 
 /**
- * DEPRECATED: Use getEligibility() instead
+ * @deprecated Use getEligibility() instead - it now calculates on-the-fly
  * This function is kept for backward compatibility but will be removed
- * 
- * @deprecated Backend now calculates eligibility. Use getEligibility() instead.
  */
 export function calculateEligibility(profile: UserProfile | null): EligibilityCalculation & {
   earliestApplicationDate: Date | null;
 } {
-  console.warn('calculateEligibility() is deprecated. Backend now handles calculations. Use getEligibility() instead.');
+  console.warn('calculateEligibility() is deprecated. Use getEligibility() instead.');
   return getEligibility(profile);
 }
 
