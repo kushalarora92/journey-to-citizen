@@ -6,8 +6,14 @@
     "declaration": true,
     "declarationMap": true,
     "noEmit": false,
+    "lib": ["ES2017", "DOM"],
+    "target": "ES2017",
+    "moduleResolution": "node",
     "composite": true
   },
   "include": ["src/**/*"],
-  "exclude": ["node_modules", "lib"]
+  "exclude": ["node_modules", "lib"],
+  "references": [
+    { "path": "../types" }
+  ]
 }

@@ -26,3 +26,6 @@ serviceAccountKey.json
 
 # Generated types (copied by predeploy script)
 types/
+
+# Generated calculations (copied by predeploy script)
+calculations/

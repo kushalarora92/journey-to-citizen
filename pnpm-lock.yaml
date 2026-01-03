@@ -32,6 +32,9 @@ importers:
       '@gluestack-ui/utils':
         specifier: ^3.0.7
         version: 3.0.7(react-dom@19.1.0(react@19.1.0))(react-native-web@0.21.1(react-dom@19.1.0(react@19.1.0))(react@19.1.0))(react-native@0.81.4(@babel/core@7.28.4)(@types/react@19.1.17)(react@19.1.0))(react@19.1.0)(tailwindcss@4.1.14)
+      '@journey-to-citizen/calculations':
+        specifier: workspace:*
+        version: link:../../packages/calculations
       '@journey-to-citizen/types':
         specifier: workspace:*
         version: link:../../packages/types
@@ -149,6 +152,16 @@ importers:
         version: 19.1.0(react@19.1.0)
       typescript:
         specifier: ~5.9.2
+        version: 5.9.3
+
+  packages/calculations:
+    dependencies:
+      '@journey-to-citizen/types':
+        specifier: workspace:*
+        version: link:../types
+    devDependencies:
+      typescript:
+        specifier: ^5.3.3
         version: 5.9.3
 
   packages/types:

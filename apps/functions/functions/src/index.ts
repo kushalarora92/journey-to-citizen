@@ -16,11 +16,11 @@ import {
   UserProfile,
   UpdateProfileData,
   ApiResponse,
-  AbsenceEntry,
-  PresenceEntry,
-  getPRDate,
-  getPrePRPresence,
 } from "@journey-to-citizen/types";
+import {
+  calculateStaticEligibility,
+  hasEligibilityFieldsChanged,
+} from "@journey-to-citizen/calculations";
 
 // Initialize Firebase Admin SDK
 admin.initializeApp();
@@ -42,115 +42,6 @@ const db = admin.firestore();
 // In the v1 API, each function can only serve one request per container, so
 // this will be the maximum concurrent request count.
 setGlobalOptions({maxInstances: 10});
-
-/**
- * Convert date string (YYYY-MM-DD) to Date object
- *
- * @param {string} dateString - ISO date string
- * @return {Date} Date object
- */
-function parseDate(dateString: string): Date {
-  return new Date(dateString + "T00:00:00.000Z");
-}
-
-/**
- * Convert Date object to date string (YYYY-MM-DD)
- *
- * @param {Date} date - Date object
- * @return {string} ISO date string
- */
-function formatDate(date: Date): string {
-  return date.toISOString().split("T")[0];
-}
-
-/**
- * Merge overlapping date ranges to prevent double-counting
- * Sorts ranges by start date and merges overlapping/adjacent ranges
- *
- * @param {Array<{from: string, to: string}>} ranges - Date ranges to merge
- * @return {Array<{from: string, to: string}>} Merged non-overlapping ranges
- */
-function mergeOverlappingDateRanges(
-  ranges: Array<{from: string; to: string}>
-): Array<{from: string; to: string}> {
-  if (ranges.length === 0) return [];
-
-  // Sort by start date
-  const sorted = [...ranges].sort((a, b) => {
-    return parseDate(a.from).getTime() - parseDate(b.from).getTime();
-  });
-
-  const merged: Array<{from: string; to: string}> = [sorted[0]];
-
-  for (let i = 1; i < sorted.length; i++) {
-    const current = sorted[i];
-    const last = merged[merged.length - 1];
-
-    const currentStart = parseDate(current.from);
-    const currentEnd = parseDate(current.to);
-    const lastEnd = parseDate(last.to);
-
-    // Check if current range overlaps or is adjacent to last merged range
-    // Adjacent means they touch (lastEnd + 1 day === currentStart)
-    const oneDayAfterLast = new Date(lastEnd);
-    oneDayAfterLast.setDate(oneDayAfterLast.getDate() + 1);
-
-    if (currentStart <= oneDayAfterLast) {
-      // Overlapping or adjacent - merge by extending the end date
-      if (currentEnd > lastEnd) {
-        last.to = current.to;
-      }
-      // else current is completely contained in last, no change needed
-    } else {
-      // No overlap - add as new range
-      merged.push(current);
-    }
-  }
-
-  return merged;
-}
-
-/**
- * Check if eligibility-relevant fields have changed
- *
- * @param {Record<string, any>} userData - New user data
- * @param {Record<string, any>} existingData - Existing user data
- * @param {boolean} isNewUser - Whether this is a new user
- * @return {boolean} True if relevant fields changed
- */
-function hasEligibilityFieldsChanged(
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  userData: Record<string, any>,
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  existingData: Record<string, any>,
-  isNewUser: boolean
-): boolean {
-  // Always calculate for new users
-  if (isNewUser) {
-    return true;
-  }
-
-  // Check if any eligibility-relevant field has changed
-  // Includes both new statusHistory and legacy fields
-  return (
-    // NEW: statusHistory changes
-    (userData.statusHistory !== undefined &&
-      JSON.stringify(userData.statusHistory) !==
-        JSON.stringify(existingData.statusHistory)) ||
-    // LEGACY: prDate changes
-    (userData.prDate !== undefined &&
-      JSON.stringify(userData.prDate) !==
-        JSON.stringify(existingData.prDate)) ||
-    // LEGACY: presenceInCanada changes
-    (userData.presenceInCanada !== undefined &&
-      JSON.stringify(userData.presenceInCanada) !==
-        JSON.stringify(existingData.presenceInCanada)) ||
-    // Travel absences changes (used by both)
-    (userData.travelAbsences !== undefined &&
-      JSON.stringify(userData.travelAbsences) !==
-        JSON.stringify(existingData.travelAbsences))
-  );
-}
 
 /**
  * Calculate and update eligibility data in user document
@@ -177,7 +68,7 @@ function updateEligibilityData(
     "(relevant fields changed)"
   );
 
-  const {staticData} = calculateStaticEligibility(profileForCalculation);
+  const staticData = calculateStaticEligibility(profileForCalculation);
 
   // Add calculated fields to userData
   if (staticData) {
@@ -190,182 +81,6 @@ function updateEligibilityData(
       `totalAbsenceDays=${staticData.totalAbsenceDays}`
     );
   }
-}
-
-/**
- * Calculate static eligibility data that only changes when profile changes
- * Works with both new statusHistory format and legacy fields
- *
- * @param {UserProfile} profile - User profile data
- * @return {object} Static eligibility data to store in Firestore
- */
-function calculateStaticEligibility(profile: Partial<UserProfile>): {
-  staticData: {
-    daysInCanadaAsPR: number;
-    preDaysCredit: number;
-    totalAbsenceDays: number;
-    earliestEligibilityDate: string;
-  } | null;
-} {
-  // Get PR date using helper (works with both formats)
-  const prDateStr = getPRDate(profile as UserProfile);
-  
-  if (!prDateStr) {
-    // No PR date - for non-PR users with countable statuses (work/study permit),
-    // we could calculate projected eligibility, but for now return null
-    // (Frontend will handle projection display)
-    // TODO: Future enhancement - calculate projection for work/study permit holders
-    return {staticData: null};
-  }
-
-  const today = new Date();
-  const prDate = parseDate(prDateStr);
-
-  // Calculate 5-year eligibility window (citizenship requirement)
-  // Only days in the last 5 years count towards citizenship
-  const fiveYearsAgo = new Date(today);
-  fiveYearsAgo.setFullYear(today.getFullYear() - 5);
-
-  // Start counting from PR date OR 5 years ago, whichever is later
-  const eligibilityWindowStart = prDate > fiveYearsAgo ? prDate : fiveYearsAgo;
-
-  // Calculate days in the eligibility window
-  const daysInWindow = Math.floor(
-    (today.getTime() - eligibilityWindowStart.getTime()) /
-      (1000 * 60 * 60 * 24)
-  );
-
-  // Calculate pre-PR credit (max 365 days, each day counts as 0.5)
-  let preDaysCredit = 0;
-  
-  // Get pre-PR presence using helper (works with both formats)
-  const prePRPresence = getPrePRPresence(profile as UserProfile);
-  
-  // Status types that count toward citizenship (visitor does NOT count)
-  const countableStatuses = ["study_permit", "work_permit", "protected_person"];
-  
-  // Filter to only include countable statuses
-  const countablePresence = prePRPresence.filter(
-    (entry) => countableStatuses.includes(entry.status)
-  );
-  
-  if (countablePresence.length > 0) {
-    // Merge overlapping presence entries to prevent double-counting
-    const mergedPresence = mergeOverlappingDateRanges(countablePresence);
-
-    const totalPrePRDays = mergedPresence.reduce(
-      (total: number, entry: {from: string; to: string}) => {
-        const from = parseDate(entry.from);
-        const to = parseDate(entry.to);
-        const days =
-          Math.floor((to.getTime() - from.getTime()) / (1000 * 60 * 60 * 24)) +
-          1;
-        return total + days;
-      },
-      0
-    );
-
-    // Each day before PR counts as 0.5 days, max 365 days credit
-    preDaysCredit = Math.min(Math.floor(totalPrePRDays * 0.5), 365);
-  } else if (profile.presenceInCanada && profile.presenceInCanada.length > 0) {
-    // Fallback to legacy presenceInCanada if helper returned empty
-    // (shouldn't happen, but for safety)
-    // Filter to only include countable purposes (visitor, business, no_legal_status do NOT count)
-    const countablePurposes = ["study_permit", "work_permit", "protected_person"];
-    const countableLegacyPresence = profile.presenceInCanada.filter(
-      (entry: PresenceEntry) => countablePurposes.includes(entry.purpose)
-    );
-    
-    if (countableLegacyPresence.length > 0) {
-      const mergedPresence = mergeOverlappingDateRanges(countableLegacyPresence);
-
-      const totalPrePRDays = mergedPresence.reduce(
-        (total: number, entry: {from: string; to: string}) => {
-          const from = parseDate(entry.from);
-          const to = parseDate(entry.to);
-          const days =
-            Math.floor((to.getTime() - from.getTime()) / (1000 * 60 * 60 * 24)) +
-            1;
-          return total + days;
-        },
-        0
-      );
-
-      preDaysCredit = Math.min(Math.floor(totalPrePRDays * 0.5), 365);
-    }
-  }
-
-  // Calculate absence days (only absences within the 5-year window)
-  let totalAbsenceDays = 0;
-  if (profile.travelAbsences && profile.travelAbsences.length > 0) {
-    // First, filter absences that overlap with eligibility window
-    const relevantAbsences = profile.travelAbsences
-      .filter((absence: AbsenceEntry) => {
-        const fromDate = parseDate(absence.from);
-        const toDate = parseDate(absence.to);
-        // Only count absences that overlap with the eligibility window
-        return toDate >= eligibilityWindowStart && fromDate <= today;
-      })
-      .map((absence: AbsenceEntry) => ({
-        from: absence.from,
-        to: absence.to,
-      }));
-
-    // Merge overlapping absences to prevent double-counting
-    const mergedAbsences = mergeOverlappingDateRanges(relevantAbsences);
-
-    totalAbsenceDays = mergedAbsences.reduce(
-      (total: number, absence: {from: string; to: string}) => {
-        const from = parseDate(absence.from);
-        const to = parseDate(absence.to);
-
-        // Clamp absence to the eligibility window
-        const effectiveFrom =
-          from < eligibilityWindowStart ? eligibilityWindowStart : from;
-        const effectiveTo = to > today ? today : to;
-
-        // Only count full days outside (exclude departure and return days)
-        const days = Math.max(
-          0,
-          Math.floor(
-            (effectiveTo.getTime() - effectiveFrom.getTime()) /
-              (1000 * 60 * 60 * 24)
-          ) - 1
-        );
-        return total + days;
-      },
-      0
-    );
-  }
-
-  // Days as PR = raw days in the eligibility window
-  const daysInCanadaAsPR = daysInWindow;
-
-  // Calculate total eligible days (raw PR days + credit - absences)
-  const totalEligibleDays = daysInCanadaAsPR + preDaysCredit - totalAbsenceDays;
-  const daysRequired = 1095;
-  const daysRemaining = Math.max(0, daysRequired - totalEligibleDays);
-
-  // Calculate earliest application date
-  let earliestDate: Date;
-  if (daysRemaining > 0) {
-    // Assuming no future absences, calculate when they'll reach 1095 days
-    earliestDate = new Date(
-      today.getTime() + daysRemaining * 24 * 60 * 60 * 1000
-    );
-  } else {
-    // Already eligible
-    earliestDate = today;
-  }
-
-  return {
-    staticData: {
-      daysInCanadaAsPR,
-      preDaysCredit,
-      totalAbsenceDays,
-      earliestEligibilityDate: formatDate(earliestDate),
-    },
-  };
 }
 
 /**

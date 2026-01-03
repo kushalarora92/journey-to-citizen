@@ -17,8 +17,11 @@ import {
   hasPRStatus, 
   hasCountableDays,
   STATUS_TYPE_LABELS,
-  StatusType,
 } from '@journey-to-citizen/types';
+import {
+  calculateProjection,
+  parseDate,
+} from '@journey-to-citizen/calculations';
 
 export default function TabOneScreen() {
   const router = useRouter();
@@ -56,99 +59,13 @@ export default function TabOneScreen() {
   const hasCompleteProfile = userProfile?.prDate != null;
   const hasStatusHistory = userProfile?.statusHistory && userProfile.statusHistory.length > 0;
   
-  // TODO: Consider moving this calculation to backend (Cloud Functions) or a shared package.
-  // Currently, backend calculates eligibility for PR users only.
-  // This frontend calculation is for non-PR "what if" projections only.
-  // Options: 1) Extend backend to handle projections, 2) Create shared calculation package
-  //
-  // Calculate days in Canada for non-PR users (projection)
-  // - Only counts days on work/study permit and protected person status (visitor does NOT count)
-  // - Only counts days within the last 5 years
-  // - Deducts travel absences that overlap with countable status periods
-  const calculateDaysInCanada = (): { totalDays: number; absenceDays: number; grossDays: number } => {
-    if (!userProfile?.statusHistory || userProfile.statusHistory.length === 0) {
-      return { totalDays: 0, absenceDays: 0, grossDays: 0 };
-    }
-    
-    const today = new Date();
-    const fiveYearsAgo = new Date(today);
-    fiveYearsAgo.setFullYear(fiveYearsAgo.getFullYear() - 5);
-    
-    // Status types that count toward citizenship (visitor does NOT count)
-    const countableStatuses = ['study_permit', 'work_permit', 'protected_person'];
-    
-    // Build an array of countable day ranges (within last 5 years)
-    const countableRanges: { from: Date; to: Date }[] = [];
-    
-    userProfile.statusHistory.forEach(entry => {
-      // Only count entries with countable statuses
-      if (countableStatuses.includes(entry.status)) {
-        let from = new Date(entry.from);
-        let to = entry.to ? new Date(entry.to) : today;
-        
-        // Clamp to 5-year window
-        if (from < fiveYearsAgo) from = new Date(fiveYearsAgo);
-        if (to > today) to = new Date(today);
-        
-        // Only add if range is valid (from before to, and within 5 years)
-        if (from < to && to > fiveYearsAgo) {
-          countableRanges.push({ from, to });
-        }
-      }
-    });
-    
-    // Calculate gross days from countable status periods
-    let grossDays = 0;
-    countableRanges.forEach(range => {
-      const days = Math.floor((range.to.getTime() - range.from.getTime()) / (1000 * 60 * 60 * 24));
-      grossDays += Math.max(0, days);
-    });
-    
-    // Calculate absence days that overlap with countable periods
-    let absenceDays = 0;
-    if (userProfile.travelAbsences && userProfile.travelAbsences.length > 0) {
-      userProfile.travelAbsences.forEach(absence => {
-        const absenceFrom = new Date(absence.from);
-        const absenceTo = new Date(absence.to);
-        
-        // Check each countable range for overlap
-        countableRanges.forEach(range => {
-          // Find overlap between absence and countable range
-          const overlapStart = new Date(Math.max(absenceFrom.getTime(), range.from.getTime()));
-          const overlapEnd = new Date(Math.min(absenceTo.getTime(), range.to.getTime()));
-          
-          if (overlapStart < overlapEnd) {
-            // There is an overlap - count the full days absent
-            // Per IRCC rules: departure and return days count as present
-            // So we subtract 2 days (or 0 if absence is too short)
-            const overlapDays = Math.floor((overlapEnd.getTime() - overlapStart.getTime()) / (1000 * 60 * 60 * 24));
-            const fullDaysAbsent = Math.max(0, overlapDays - 1); // -1 because we don't count departure day
-            absenceDays += fullDaysAbsent;
-          }
-        });
-      });
-    }
-    
-    const totalDays = Math.max(0, grossDays - absenceDays);
-    return { totalDays, absenceDays, grossDays };
-  };
-  
-  const daysCalculation = calculateDaysInCanada();
-  const daysInCanada = daysCalculation.totalDays;
-  const absenceDaysDeducted = daysCalculation.absenceDays;
-  const grossDaysInCanada = daysCalculation.grossDays;
-  const projectedCredit = Math.min(Math.floor(daysInCanada * 0.5), 365); // Max 365 days credit
-  
-  // Calculate projected earliest application date if user got PR today
-  const calculateProjectedEarliestDate = (): Date => {
-    const today = new Date();
-    const daysNeededAsPR = Math.max(0, 1095 - projectedCredit);
-    const projectedDate = new Date(today);
-    projectedDate.setDate(projectedDate.getDate() + daysNeededAsPR);
-    return projectedDate;
-  };
-  
-  const projectedEarliestDate = calculateProjectedEarliestDate();
+  // Use shared calculation package for non-PR projection
+  const projection = calculateProjection(userProfile || {});
+  const daysInCanada = projection.totalCountableDays;
+  const absenceDaysDeducted = projection.absenceDaysDeducted;
+  const grossDaysInCanada = projection.grossDays;
+  const projectedCredit = projection.projectedCredit;
+  const projectedEarliestDate = parseDate(projection.projectedEarliestDate);
 
   return (
     <ScrollView style={styles.container}>
