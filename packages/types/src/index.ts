@@ -21,7 +21,8 @@ export const IMMIGRATION_STATUS_LABELS: Record<string, string> = {
 };
 
 /**
- * Purpose of stay options for pre-PR presence
+ * Purpose of stay options for pre-PR presence (LEGACY - kept for backward compatibility)
+ * @deprecated Use STATUS_TYPES instead for new implementations
  */
 export const PURPOSE_OF_STAY = {
   VISITOR: 'visitor',
@@ -40,6 +41,39 @@ export const PURPOSE_OF_STAY_LABELS: Record<string, string> = {
   business: 'Business',
   no_legal_status: 'No Legal Status',
 };
+
+/**
+ * Status types for immigration timeline
+ * Used in StatusEntry for tracking immigration history
+ */
+export const STATUS_TYPES = {
+  VISITOR: 'visitor',
+  STUDY_PERMIT: 'study_permit',
+  WORK_PERMIT: 'work_permit',
+  PROTECTED_PERSON: 'protected_person',
+  PERMANENT_RESIDENT: 'permanent_resident',
+} as const;
+
+export type StatusType = typeof STATUS_TYPES[keyof typeof STATUS_TYPES];
+
+export const STATUS_TYPE_LABELS: Record<StatusType, string> = {
+  visitor: 'Visitor',
+  study_permit: 'Study Permit',
+  work_permit: 'Work Permit',
+  protected_person: 'Protected Person',
+  permanent_resident: 'Permanent Resident',
+};
+
+/**
+ * Immigration status entry for timeline
+ * Represents a period with a specific immigration status
+ */
+export interface StatusEntry {
+  id: string;
+  status: StatusType;
+  from: string; // ISO date string (YYYY-MM-DD) - when this status started
+  to?: string;  // ISO date string (YYYY-MM-DD) - when this status ended (undefined = current/ongoing)
+}
 
 /**
  * Static eligibility data calculated by backend
@@ -66,6 +100,8 @@ export interface EligibilityCalculation extends StaticEligibilityData {
 
 /**
  * Presence in Canada entry before becoming PR
+ * @deprecated Use statusHistory instead for new implementations
+ * Kept for backward compatibility with existing user data
  */
 export interface PresenceEntry {
   id: string;
@@ -91,10 +127,18 @@ export interface UserProfile {
   uid: string;
   email: string | null;
   displayName?: string | null;
-  immigrationStatus?: 'visitor' | 'student' | 'worker' | 'permanent_resident';
   profileComplete?: boolean;
+  
+  // NEW: Timeline-based immigration history (preferred)
+  // Represents complete immigration journey with status changes
+  statusHistory?: StatusEntry[];
+  
+  // LEGACY: Keep for backward compatibility (will be migrated to statusHistory)
+  immigrationStatus?: 'visitor' | 'student' | 'worker' | 'permanent_resident';
   prDate?: string; // ISO date string (YYYY-MM-DD)
   presenceInCanada?: PresenceEntry[];
+  
+  // Travel absences (separate concern - not part of status)
   travelAbsences?: AbsenceEntry[];
   
   // Backend-calculated static eligibility data (updated on profile changes)
@@ -110,10 +154,16 @@ export interface UserProfile {
  */
 export interface UpdateProfileData {
   displayName?: string;
-  immigrationStatus?: 'visitor' | 'student' | 'worker' | 'permanent_resident';
   profileComplete?: boolean;
+  
+  // NEW: Timeline-based approach (preferred)
+  statusHistory?: StatusEntry[];
+  
+  // LEGACY: Keep for backward compatibility
+  immigrationStatus?: 'visitor' | 'student' | 'worker' | 'permanent_resident';
   prDate?: string; // ISO date string (YYYY-MM-DD)
   presenceInCanada?: PresenceEntry[];
+  
   travelAbsences?: AbsenceEntry[];
   [key: string]: any; // Allow additional custom fields
 }
@@ -125,4 +175,191 @@ export interface ApiResponse<T = any> {
   success: boolean;
   message: string;
   data?: T;
+}
+
+// ============================================================================
+// HELPER FUNCTIONS
+// These provide backward-compatible access to profile data
+// They work with both new statusHistory and legacy fields
+// ============================================================================
+
+/**
+ * Get current immigration status from profile
+ * Prefers statusHistory, falls back to legacy immigrationStatus
+ */
+export function getCurrentStatus(profile: UserProfile | null | undefined): StatusType | undefined {
+  if (!profile) return undefined;
+  
+  // Prefer statusHistory if available
+  if (profile.statusHistory && profile.statusHistory.length > 0) {
+    // Find the current status (no 'to' date means ongoing)
+    const currentEntry = profile.statusHistory.find(entry => !entry.to);
+    if (currentEntry) return currentEntry.status;
+    
+    // If all entries have end dates, return the most recent one
+    const sorted = [...profile.statusHistory].sort(
+      (a, b) => new Date(b.from).getTime() - new Date(a.from).getTime()
+    );
+    return sorted[0]?.status;
+  }
+  
+  // Fall back to legacy field
+  if (profile.immigrationStatus) {
+    // Map legacy 'permanent_resident' to new format
+    if (profile.immigrationStatus === 'permanent_resident') {
+      return 'permanent_resident';
+    }
+    // Map legacy statuses to new STATUS_TYPES
+    const legacyToNew: Record<string, StatusType> = {
+      'visitor': 'visitor',
+      'student': 'study_permit',
+      'worker': 'work_permit',
+    };
+    return legacyToNew[profile.immigrationStatus] || profile.immigrationStatus as StatusType;
+  }
+  
+  return undefined;
+}
+
+/**
+ * Get PR date from profile
+ * Prefers statusHistory, falls back to legacy prDate
+ */
+export function getPRDate(profile: UserProfile | null | undefined): string | undefined {
+  if (!profile) return undefined;
+  
+  // Prefer statusHistory if available
+  if (profile.statusHistory && profile.statusHistory.length > 0) {
+    const prEntry = profile.statusHistory.find(entry => entry.status === 'permanent_resident');
+    return prEntry?.from;
+  }
+  
+  // Fall back to legacy field
+  return profile.prDate;
+}
+
+/**
+ * Check if user currently has PR status
+ */
+export function hasPRStatus(profile: UserProfile | null | undefined): boolean {
+  const currentStatus = getCurrentStatus(profile);
+  return currentStatus === 'permanent_resident';
+}
+
+/**
+ * Check if user has any time counting toward citizenship
+ * (PR holders or those with work/study permits whose days will count as pre-PR credit)
+ */
+export function hasCountableDays(profile: UserProfile | null | undefined): boolean {
+  const currentStatus = getCurrentStatus(profile);
+  if (!currentStatus) return false;
+  
+  // All statuses except visitor can count days
+  return currentStatus !== 'visitor';
+}
+
+/**
+ * Get all pre-PR presence entries from profile
+ * Combines statusHistory (non-PR statuses) with legacy presenceInCanada
+ */
+export function getPrePRPresence(profile: UserProfile | null | undefined): Array<{from: string; to: string; status: StatusType}> {
+  if (!profile) return [];
+  
+  const entries: Array<{from: string; to: string; status: StatusType}> = [];
+  
+  // From statusHistory: get all non-PR statuses that have ended
+  if (profile.statusHistory && profile.statusHistory.length > 0) {
+    const prDate = getPRDate(profile);
+    
+    profile.statusHistory.forEach(entry => {
+      if (entry.status !== 'permanent_resident' && entry.to) {
+        entries.push({
+          from: entry.from,
+          to: entry.to,
+          status: entry.status,
+        });
+      }
+    });
+  }
+  
+  // From legacy presenceInCanada (if no statusHistory or for additional entries)
+  if ((!profile.statusHistory || profile.statusHistory.length === 0) && profile.presenceInCanada) {
+    profile.presenceInCanada.forEach(entry => {
+      // Map legacy purpose to StatusType
+      const purposeToStatus: Record<string, StatusType> = {
+        'visitor': 'visitor',
+        'study_permit': 'study_permit',
+        'work_permit': 'work_permit',
+        'protected_person': 'protected_person',
+        'business': 'visitor', // Business visitors count as visitor
+        'no_legal_status': 'visitor', // Map to visitor for counting purposes
+      };
+      
+      entries.push({
+        from: entry.from,
+        to: entry.to,
+        status: purposeToStatus[entry.purpose] || 'visitor',
+      });
+    });
+  }
+  
+  return entries;
+}
+
+/**
+ * Convert legacy profile data to statusHistory format
+ * Useful for migration
+ */
+export function convertLegacyToStatusHistory(profile: UserProfile): StatusEntry[] {
+  const entries: StatusEntry[] = [];
+  
+  // Add pre-PR presence entries
+  if (profile.presenceInCanada && profile.presenceInCanada.length > 0) {
+    profile.presenceInCanada.forEach(presence => {
+      // Map legacy purpose to StatusType
+      const purposeToStatus: Record<string, StatusType> = {
+        'visitor': 'visitor',
+        'study_permit': 'study_permit',
+        'work_permit': 'work_permit',
+        'protected_person': 'protected_person',
+        'business': 'visitor',
+        'no_legal_status': 'visitor',
+      };
+      
+      entries.push({
+        id: presence.id,
+        status: purposeToStatus[presence.purpose] || 'visitor',
+        from: presence.from,
+        to: presence.to,
+      });
+    });
+  }
+  
+  // Add PR entry if exists
+  if (profile.prDate && profile.immigrationStatus === 'permanent_resident') {
+    entries.push({
+      id: `pr-${Date.now()}`,
+      status: 'permanent_resident',
+      from: profile.prDate,
+      to: undefined, // Current/ongoing
+    });
+  } else if (profile.immigrationStatus && profile.immigrationStatus !== 'permanent_resident') {
+    // Add current non-PR status
+    const legacyToStatus: Record<string, StatusType> = {
+      'visitor': 'visitor',
+      'student': 'study_permit',
+      'worker': 'work_permit',
+    };
+    
+    // We don't have a start date for legacy status, so we'll use today
+    entries.push({
+      id: `current-${Date.now()}`,
+      status: legacyToStatus[profile.immigrationStatus] || 'visitor',
+      from: new Date().toISOString().split('T')[0],
+      to: undefined, // Current/ongoing
+    });
+  }
+  
+  // Sort by date (oldest first)
+  return entries.sort((a, b) => new Date(a.from).getTime() - new Date(b.from).getTime());
 }

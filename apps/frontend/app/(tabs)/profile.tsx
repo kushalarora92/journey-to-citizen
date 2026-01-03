@@ -10,7 +10,17 @@ import { Text, View } from '@/components/Themed';
 import { useAuth } from '@/context/AuthContext';
 import { useFirebaseFunctions } from '@/hooks/useFirebaseFunctions';
 import DateRangeList, { DateRangeEntry } from '@/components/DateRangeList';
-import { PresenceEntry, IMMIGRATION_STATUS_LABELS, PURPOSE_OF_STAY_LABELS } from '@journey-to-citizen/types';
+import StatusTimeline from '@/components/StatusTimeline';
+import { 
+  PresenceEntry, 
+  IMMIGRATION_STATUS_LABELS, 
+  PURPOSE_OF_STAY_LABELS,
+  StatusEntry,
+  StatusType,
+  STATUS_TYPE_LABELS,
+  hasPRStatus,
+  getCurrentStatus,
+} from '@journey-to-citizen/types';
 import { 
   findOverlappingRanges, 
   formatOverlappingRangesMessage,
@@ -284,6 +294,145 @@ export default function ProfileScreen() {
     }
   };
 
+  // Handlers for status timeline (new timeline-based approach)
+  const handleAddStatusEntry = async (entry: Omit<StatusEntry, 'id'>) => {
+    try {
+      trackProfileAction('add_status_attempt', {
+        status: entry.status,
+        from_date: entry.from,
+        to_date: entry.to,
+      });
+      
+      const currentHistory = userProfile?.statusHistory || [];
+      
+      const newEntry: StatusEntry = {
+        id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+        status: entry.status,
+        from: entry.from,
+        to: entry.to,
+      };
+      
+      const result = await updateUserProfile({
+        statusHistory: [...currentHistory, newEntry],
+      });
+      
+      if (result.data) {
+        updateLocalProfile(result.data);
+        trackProfileAction('add_status_success', {
+          entry_id: newEntry.id,
+          status: newEntry.status,
+        });
+      }
+    } catch (error: any) {
+      trackProfileAction('add_status_error', { error: error.message });
+      throw new Error(error.message || 'Failed to add status');
+    }
+  };
+
+  const handleEditStatusEntry = async (id: string, updates: Partial<StatusEntry>) => {
+    try {
+      trackProfileAction('edit_status_attempt', {
+        entry_id: id,
+        updated_fields: Object.keys(updates),
+      });
+      
+      const currentHistory = userProfile?.statusHistory || [];
+      const updatedHistory = currentHistory.map(entry =>
+        entry.id === id ? { ...entry, ...updates } : entry
+      );
+      
+      const result = await updateUserProfile({
+        statusHistory: updatedHistory,
+      });
+      
+      if (result.data) {
+        updateLocalProfile(result.data);
+        trackProfileAction('edit_status_success', { entry_id: id });
+      }
+    } catch (error: any) {
+      trackProfileAction('edit_status_error', { entry_id: id, error: error.message });
+      throw new Error(error.message || 'Failed to update status');
+    }
+  };
+
+  const handleDeleteStatusEntry = async (id: string) => {
+    try {
+      trackProfileAction('delete_status_attempt', { entry_id: id });
+      
+      const currentHistory = userProfile?.statusHistory || [];
+      const updatedHistory = currentHistory.filter(entry => entry.id !== id);
+      
+      const result = await updateUserProfile({
+        statusHistory: updatedHistory,
+      });
+      
+      if (result.data) {
+        updateLocalProfile(result.data);
+        trackProfileAction('delete_status_success', { entry_id: id });
+      }
+    } catch (error: any) {
+      trackProfileAction('delete_status_error', { entry_id: id, error: error.message });
+      throw new Error(error.message || 'Failed to delete status');
+    }
+  };
+
+  const handleStatusChange = async (newStatus: StatusType, startDate: string) => {
+    try {
+      trackProfileAction('status_change_attempt', {
+        new_status: newStatus,
+        start_date: startDate,
+      });
+      
+      const currentHistory = userProfile?.statusHistory || [];
+      
+      // Close the current (ongoing) status entry
+      const updatedHistory = currentHistory.map(entry => {
+        if (!entry.to) {
+          // This is the current status - close it
+          return { ...entry, to: startDate };
+        }
+        return entry;
+      });
+      
+      // Add the new status entry
+      const newEntry: StatusEntry = {
+        id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+        status: newStatus,
+        from: startDate,
+        to: undefined, // Current/ongoing
+      };
+      
+      // Build update object
+      const updates: any = {
+        statusHistory: [...updatedHistory, newEntry],
+      };
+      
+      // If changing to PR, also update legacy fields for backward compatibility
+      if (newStatus === 'permanent_resident') {
+        updates.immigrationStatus = 'permanent_resident';
+        updates.prDate = startDate;
+      }
+      
+      const result = await updateUserProfile(updates);
+      
+      if (result.data) {
+        updateLocalProfile(result.data);
+        trackProfileAction('status_change_success', {
+          new_status: newStatus,
+        });
+        
+        // Show congratulatory message if got PR
+        if (newStatus === 'permanent_resident') {
+          const message = 'Congratulations on your PR! 🎉 Your eligibility countdown has begun.';
+          Platform.OS === 'web' ? alert(message) : Alert.alert('PR Status Updated', message);
+        }
+      }
+    } catch (error: any) {
+      trackProfileAction('status_change_error', { error: error.message });
+      throw new Error(error.message || 'Failed to update status');
+    }
+  };
+
   const handleResendVerification = async () => {
     try {
       await sendVerificationEmail();
@@ -523,8 +672,21 @@ export default function ProfileScreen() {
           </>
         )}
 
-        {/* Presence in Canada Before PR (only for PRs) */}
-        {userProfile?.immigrationStatus === 'permanent_resident' && (
+        {/* Immigration Status Timeline */}
+        <View style={styles.presenceSection}>
+          <StatusTimeline
+            entries={userProfile?.statusHistory || []}
+            onAddStatus={handleAddStatusEntry}
+            onEditStatus={handleEditStatusEntry}
+            onDeleteStatus={handleDeleteStatusEntry}
+            onStatusChange={handleStatusChange}
+            profile={userProfile}
+          />
+        </View>
+
+        {/* Legacy: Presence in Canada Before PR (only for PRs) - kept for backward compatibility */}
+        {userProfile?.immigrationStatus === 'permanent_resident' && 
+         (!userProfile?.statusHistory || userProfile.statusHistory.length === 0) && (
           <View style={styles.presenceSection}>
             <View style={styles.sectionHeader}>
               <FontAwesome name="calendar" size={18} color="#3b82f6" />

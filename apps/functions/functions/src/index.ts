@@ -17,6 +17,9 @@ import {
   UpdateProfileData,
   ApiResponse,
   AbsenceEntry,
+  PresenceEntry,
+  getPRDate,
+  getPrePRPresence,
 } from "@journey-to-citizen/types";
 
 // Initialize Firebase Admin SDK
@@ -128,13 +131,21 @@ function hasEligibilityFieldsChanged(
   }
 
   // Check if any eligibility-relevant field has changed
+  // Includes both new statusHistory and legacy fields
   return (
+    // NEW: statusHistory changes
+    (userData.statusHistory !== undefined &&
+      JSON.stringify(userData.statusHistory) !==
+        JSON.stringify(existingData.statusHistory)) ||
+    // LEGACY: prDate changes
     (userData.prDate !== undefined &&
       JSON.stringify(userData.prDate) !==
         JSON.stringify(existingData.prDate)) ||
+    // LEGACY: presenceInCanada changes
     (userData.presenceInCanada !== undefined &&
       JSON.stringify(userData.presenceInCanada) !==
         JSON.stringify(existingData.presenceInCanada)) ||
+    // Travel absences changes (used by both)
     (userData.travelAbsences !== undefined &&
       JSON.stringify(userData.travelAbsences) !==
         JSON.stringify(existingData.travelAbsences))
@@ -183,6 +194,7 @@ function updateEligibilityData(
 
 /**
  * Calculate static eligibility data that only changes when profile changes
+ * Works with both new statusHistory format and legacy fields
  *
  * @param {UserProfile} profile - User profile data
  * @return {object} Static eligibility data to store in Firestore
@@ -195,12 +207,19 @@ function calculateStaticEligibility(profile: Partial<UserProfile>): {
     earliestEligibilityDate: string;
   } | null;
 } {
-  if (!profile.prDate) {
+  // Get PR date using helper (works with both formats)
+  const prDateStr = getPRDate(profile as UserProfile);
+  
+  if (!prDateStr) {
+    // No PR date - for non-PR users with countable statuses (work/study permit),
+    // we could calculate projected eligibility, but for now return null
+    // (Frontend will handle projection display)
+    // TODO: Future enhancement - calculate projection for work/study permit holders
     return {staticData: null};
   }
 
   const today = new Date();
-  const prDate = parseDate(profile.prDate);
+  const prDate = parseDate(prDateStr);
 
   // Calculate 5-year eligibility window (citizenship requirement)
   // Only days in the last 5 years count towards citizenship
@@ -218,9 +237,21 @@ function calculateStaticEligibility(profile: Partial<UserProfile>): {
 
   // Calculate pre-PR credit (max 365 days, each day counts as 0.5)
   let preDaysCredit = 0;
-  if (profile.presenceInCanada && profile.presenceInCanada.length > 0) {
+  
+  // Get pre-PR presence using helper (works with both formats)
+  const prePRPresence = getPrePRPresence(profile as UserProfile);
+  
+  // Status types that count toward citizenship (visitor does NOT count)
+  const countableStatuses = ["study_permit", "work_permit", "protected_person"];
+  
+  // Filter to only include countable statuses
+  const countablePresence = prePRPresence.filter(
+    (entry) => countableStatuses.includes(entry.status)
+  );
+  
+  if (countablePresence.length > 0) {
     // Merge overlapping presence entries to prevent double-counting
-    const mergedPresence = mergeOverlappingDateRanges(profile.presenceInCanada);
+    const mergedPresence = mergeOverlappingDateRanges(countablePresence);
 
     const totalPrePRDays = mergedPresence.reduce(
       (total: number, entry: {from: string; to: string}) => {
@@ -236,6 +267,32 @@ function calculateStaticEligibility(profile: Partial<UserProfile>): {
 
     // Each day before PR counts as 0.5 days, max 365 days credit
     preDaysCredit = Math.min(Math.floor(totalPrePRDays * 0.5), 365);
+  } else if (profile.presenceInCanada && profile.presenceInCanada.length > 0) {
+    // Fallback to legacy presenceInCanada if helper returned empty
+    // (shouldn't happen, but for safety)
+    // Filter to only include countable purposes (visitor, business, no_legal_status do NOT count)
+    const countablePurposes = ["study_permit", "work_permit", "protected_person"];
+    const countableLegacyPresence = profile.presenceInCanada.filter(
+      (entry: PresenceEntry) => countablePurposes.includes(entry.purpose)
+    );
+    
+    if (countableLegacyPresence.length > 0) {
+      const mergedPresence = mergeOverlappingDateRanges(countableLegacyPresence);
+
+      const totalPrePRDays = mergedPresence.reduce(
+        (total: number, entry: {from: string; to: string}) => {
+          const from = parseDate(entry.from);
+          const to = parseDate(entry.to);
+          const days =
+            Math.floor((to.getTime() - from.getTime()) / (1000 * 60 * 60 * 24)) +
+            1;
+          return total + days;
+        },
+        0
+      );
+
+      preDaysCredit = Math.min(Math.floor(totalPrePRDays * 0.5), 365);
+    }
   }
 
   // Calculate absence days (only absences within the 5-year window)
