@@ -10,7 +10,7 @@ export default function PrivacyPolicyScreen() {
           <VStack space="lg" maxWidth={800} alignSelf="center" width="100%">
             <VStack space="sm">
               <Heading size="2xl">Privacy Policy</Heading>
-              <Text size="sm" color="$textLight600">Last Updated: December 16, 2025</Text>
+              <Text size="sm" color="$textLight600">Last Updated: February 2, 2026</Text>
               <Text size="sm" color="$textLight600">Version: 1.0.0</Text>
             </VStack>
 
@@ -79,7 +79,7 @@ export default function PrivacyPolicyScreen() {
 
               <Heading size="md">Where Your Data is Stored</Heading>
               <VStack space="xs" ml="$4">
-                <Text>• <Text fontWeight="$bold">Firebase Firestore:</Text> All personal data is stored securely on Google Cloud Platform servers located in the United States</Text>
+                <Text>• <Text fontWeight="$bold">Firebase Firestore:</Text> All personal data is stored securely on Google Cloud Platform servers in the North America region</Text>
                 <Text>• <Text fontWeight="$bold">Encryption:</Text> Data is encrypted both in transit (HTTPS) and at rest</Text>
               </VStack>
 
@@ -104,11 +104,11 @@ export default function PrivacyPolicyScreen() {
               <Heading size="lg">Your Rights</Heading>
               <Text>You have the right to:</Text>
               <VStack space="xs" ml="$4">
-                <Text>• <Text fontWeight="$bold">Access:</Text> View all data we have about you</Text>
-                <Text>• <Text fontWeight="$bold">Correction:</Text> Update or correct your information</Text>
-                <Text>• <Text fontWeight="$bold">Deletion:</Text> Request deletion of your account and data</Text>
-                <Text>• <Text fontWeight="$bold">Export:</Text> Request a copy of your data (coming soon)</Text>
-                <Text>• <Text fontWeight="$bold">Opt-Out:</Text> Disable analytics tracking in app settings</Text>
+                <Text>• <Text fontWeight="$bold">Access:</Text> View all data we have about you through the app</Text>
+                <Text>• <Text fontWeight="$bold">Correction:</Text> Update or correct your information in your profile</Text>
+                <Text>• <Text fontWeight="$bold">Deletion:</Text> Request deletion of your account and data (processed within 30 days)</Text>
+                <Text>• <Text fontWeight="$bold">Export:</Text> Request a copy of your data in a portable format (feature in development - contact support)</Text>
+                <Text>• <Text fontWeight="$bold">Opt-Out:</Text> Disable analytics tracking (feature in development - currently limited to browser/device settings)</Text>
               </VStack>
             </VStack>
 
@@ -168,17 +168,24 @@ export default function PrivacyPolicyScreen() {
               </VStack>
             </VStack>
 
-            {/* International Users */}
+            {/* Data Location */}
             <VStack space="sm">
-              <Heading size="lg">International Users</Heading>
+              <Heading size="lg">Data Location</Heading>
               <Text>
-                Your data may be transferred to and stored on servers in the United States. By using 
-                Journey to Citizen, you consent to this transfer.
+                Your data is currently stored on Google Cloud Platform servers in the North America region. 
+                Data is maintained in secure, compliant data centers with appropriate privacy protections.
+              </Text>
+              <Text mt="$2">
+                We reserve the right to store or process data in other locations as necessary for operational, 
+                technical, or legal reasons. If we make significant changes to data storage locations, we will 
+                notify users through the app or via email.
               </Text>
               <Text mt="$2">For users in the European Economic Area (EEA):</Text>
               <VStack space="xs" ml="$4">
-                <Text>• We comply with GDPR requirements</Text>
-                <Text>• You have additional rights under GDPR (contact us for details)</Text>
+                <Text>• We make reasonable efforts to comply with GDPR requirements</Text>
+                <Text>• You have additional rights under GDPR including data portability and the right to object</Text>
+                <Text>• <Text fontWeight="$bold">Note:</Text> Some features like data export and analytics opt-out are still in development</Text>
+                <Text>• Contact us at privacy@journeytocitizen.com to exercise your GDPR rights</Text>
               </VStack>
             </VStack>
 
@@ -203,6 +210,21 @@ export default function PrivacyPolicyScreen() {
               </VStack>
             </VStack>
 
+            {/* Important Notice - Side Project */}
+            <VStack space="sm" bg="$warning100" p="$4" borderRadius="$lg" borderWidth={1} borderColor="$warning500">
+              <Heading size="lg" color="$warning700">⚠️ Important Notice</Heading>
+              <Text fontWeight="$bold" color="$warning700">
+                Journey to Citizen is a personal side project and passion initiative.
+              </Text>
+              <VStack space="xs" ml="$4" mt="$2">
+                <Text>• <Text fontWeight="$bold">No Liability:</Text> The creator accepts no liability for any errors, omissions, or consequences arising from the use of this app. Use at your own discretion and risk.</Text>
+                <Text>• <Text fontWeight="$bold">No Warranties:</Text> This app is provided "as is" without warranties of any kind, express or implied.</Text>
+                <Text>• <Text fontWeight="$bold">Delayed Updates:</Text> Updates to this app may be delayed or infrequent. Information may become outdated.</Text>
+                <Text>• <Text fontWeight="$bold">Always Verify:</Text> Always check the official IRCC website for the latest and most accurate information regarding Canadian citizenship requirements.</Text>
+                <Text>• <Text fontWeight="$bold">No Legal Action:</Text> By using this app, you agree that no legal action can be taken against the creator for any reason related to the app's functionality, accuracy, or consequences of use.</Text>
+              </VStack>
+            </VStack>
+
             {/* Legal Disclaimer */}
             <VStack space="sm">
               <Heading size="lg">Legal Disclaimer</Heading>
@@ -223,8 +245,10 @@ export default function PrivacyPolicyScreen() {
             <VStack space="sm" mb="$8">
               <Heading size="lg">Consent</Heading>
               <Text>
-                By using Journey to Citizen, you consent to this Privacy Policy and our collection and use 
-                of information as described.
+                By using Journey to Citizen, you acknowledge that you have read and understood this Privacy Policy, 
+                the Important Notice regarding the side project nature of this app, and you consent to our collection 
+                and use of information as described. You agree to use this app at your own risk and to verify all 
+                information with official IRCC sources.
               </Text>
             </VStack>
           </VStack>

@@ -158,6 +158,20 @@ export default function SupportScreen() {
                 their path to Canadian citizenship. We are not affiliated with IRCC or the Government 
                 of Canada.
               </Text>
+              
+              {/* Important Notice */}
+              <VStack space="sm" bg="$warning100" p="$4" borderRadius="$lg" borderWidth={1} borderColor="$warning500" mt="$2">
+                <HStack space="sm" alignItems="center">
+                  <FontAwesome name="exclamation-triangle" size={20} color="#d97706" />
+                  <Heading size="md" color="$warning700">Important Notice</Heading>
+                </HStack>
+                <Text size="sm" color="$warning700">
+                  This is a personal side project. The creator accepts no liability for errors or 
+                  consequences. Updates may be delayed. Always verify information with the official 
+                  IRCC website. Use at your own risk.
+                </Text>
+              </VStack>
+              
               <Text mt="$2">
                 Version 1.0.0 • Last Updated: December 16, 2025
               </Text>

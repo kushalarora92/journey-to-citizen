@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ScrollView, StyleSheet, TouchableOpacity, Platform, Alert } from 'react-native';
+import { ScrollView, StyleSheet, TouchableOpacity, Platform, Alert, Linking } from 'react-native';
 import { Stack, useRouter } from 'expo-router';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import WebDateInput from '@/components/WebDateInput';
@@ -21,6 +21,12 @@ import {
   RadioIcon,
   RadioLabel,
   CircleIcon,
+  Checkbox,
+  CheckboxIndicator,
+  CheckboxIcon,
+  CheckboxLabel,
+  CheckIcon,
+  Link,
 } from '@gluestack-ui/themed';
 import { useAuth } from '@/context/AuthContext';
 import { useFirebaseFunctions } from '@/hooks/useFirebaseFunctions';
@@ -51,6 +57,7 @@ export default function ProfileSetupScreen() {
   const [statusStartDate, setStatusStartDate] = useState<Date>(new Date());
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [hasTravelAbsences, setHasTravelAbsences] = useState<'yes' | 'no'>('no');
+  const [agreedToPrivacy, setAgreedToPrivacy] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleDateChange = (event: any, selectedDate?: Date) => {
@@ -77,6 +84,14 @@ export default function ProfileSetupScreen() {
 
     if (!statusStartDate) {
       const message = 'Please select when your current status started';
+      Platform.OS === 'web'
+        ? alert(message)
+        : Alert.alert('Required', message);
+      return;
+    }
+
+    if (!agreedToPrivacy) {
+      const message = 'Please agree to the Terms of Service and Privacy Policy to continue';
       Platform.OS === 'web'
         ? alert(message)
         : Alert.alert('Required', message);
@@ -320,12 +335,64 @@ export default function ProfileSetupScreen() {
             </RadioGroup>
           </VStack>
 
+          {/* Privacy Policy Agreement */}
+          <VStack space="md" bg="$backgroundLight100" p="$4" borderRadius="$lg" borderWidth={1} borderColor="$borderLight200">
+            <Checkbox 
+              value="agreed" 
+              isChecked={agreedToPrivacy}
+              onChange={setAgreedToPrivacy}
+              size="md"
+            >
+              <CheckboxIndicator mr="$2">
+                <CheckboxIcon as={CheckIcon} />
+              </CheckboxIndicator>
+              <CheckboxLabel flex={1}>
+                <Text size="sm">
+                  By continuing, I acknowledge that I have read and agree to the{' '}
+                  <Text 
+                    color="$primary500" 
+                    fontWeight="$bold"
+                    onPress={() => {
+                      if (Platform.OS === 'web') {
+                        window.open('/terms', '_blank');
+                      } else {
+                        Linking.openURL('https://journeytocitizen.com/terms');
+                      }
+                    }}
+                    style={{ textDecorationLine: 'underline' }}
+                  >
+                    Terms of Service
+                  </Text>
+                  {' and '}
+                  <Text 
+                    color="$primary500" 
+                    fontWeight="$bold"
+                    onPress={() => {
+                      if (Platform.OS === 'web') {
+                        window.open('/privacy', '_blank');
+                      } else {
+                        Linking.openURL('https://journeytocitizen.com/privacy');
+                      }
+                    }}
+                    style={{ textDecorationLine: 'underline' }}
+                  >
+                    Privacy Policy
+                  </Text>
+                  {'. '}
+                  I understand this is a side project provided \"as is\" with no warranties, 
+                  and I will verify all information with official IRCC sources.
+                </Text>
+              </CheckboxLabel>
+            </Checkbox>
+          </VStack>
+
           {/* Submit Button */}
           <Button
             size="lg"
             onPress={handleSubmit}
-            isDisabled={isSubmitting}
+            isDisabled={isSubmitting || !agreedToPrivacy}
             bg="$primary500"
+            opacity={!agreedToPrivacy ? 0.5 : 1}
           >
             <ButtonText>
               {isSubmitting ? 'Setting up...' : 'Complete Profile'}

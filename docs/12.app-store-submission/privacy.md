@@ -45,7 +45,7 @@ We use your information to:
 
 ### Where Your Data is Stored
 
-- **Firebase Firestore:** All personal data is stored securely on Google Cloud Platform servers located in the United States
+- **Firebase Firestore:** All personal data is stored securely on Google Cloud Platform servers in the North America region
 - **Encryption:** Data is encrypted both in transit (HTTPS) and at rest
 
 ### Security Measures
@@ -65,11 +65,11 @@ We use your information to:
 
 You have the right to:
 
-- **Access:** View all data we have about you
-- **Correction:** Update or correct your information
-- **Deletion:** Request deletion of your account and data
-- **Export:** Request a copy of your data (coming soon)
-- **Opt-Out:** Disable analytics tracking in app settings
+- **Access:** View all data we have about you through the app
+- **Correction:** Update or correct your information in your profile
+- **Deletion:** Request deletion of your account and data (processed within 30 days)
+- **Export:** Request a copy of your data in a portable format (feature in development - contact support)
+- **Opt-Out:** Disable analytics tracking (feature in development - currently limited to browser/device settings)
 
 ## Third-Party Services
 
@@ -106,13 +106,17 @@ We use Firebase Analytics to understand how users interact with the app:
 - **Mobile Apps:** Uses secure device storage for session management
 - **No Advertising Cookies:** We do not use advertising or tracking cookies
 
-## International Users
+## Data Location
 
-Your data may be transferred to and stored on servers in the United States. By using Journey to Citizen, you consent to this transfer.
+Your data is currently stored on Google Cloud Platform servers in the North America region. Data is maintained in secure, compliant data centers with appropriate privacy protections.
+
+We reserve the right to store or process data in other locations as necessary for operational, technical, or legal reasons. If we make significant changes to data storage locations, we will notify users through the app or via email.
 
 For users in the European Economic Area (EEA):
-- We comply with GDPR requirements
-- You have additional rights under GDPR (contact us for details)
+- We make reasonable efforts to comply with GDPR requirements
+- You have additional rights under GDPR including data portability and the right to object
+- **Note:** Some features like data export and analytics opt-out are still in development
+- Contact us at privacy@journeytocitizen.com to exercise your GDPR rights
 
 ## Changes to This Policy
 
@@ -128,6 +132,16 @@ For privacy-related questions or requests:
 - **Email:** privacy@journeytocitizen.com
 - **Support:** support@journeytocitizen.com
 
+## ⚠️ Important Notice - Side Project
+
+**Journey to Citizen is a personal side project and passion initiative.**
+
+- **No Liability:** The creator accepts no liability for any errors, omissions, or consequences arising from the use of this app. Use at your own discretion and risk.
+- **No Warranties:** This app is provided "as is" without warranties of any kind, express or implied.
+- **Delayed Updates:** Updates to this app may be delayed or infrequent. Information may become outdated.
+- **Always Verify:** Always check the official IRCC website for the latest and most accurate information regarding Canadian citizenship requirements.
+- **No Legal Action:** By using this app, you agree that no legal action can be taken against the creator for any reason related to the app's functionality, accuracy, or consequences of use.
+
 ## Legal Disclaimer
 
 Journey to Citizen is an informational tool for planning purposes only. We do not provide legal or immigration advice. For official guidance:
@@ -138,10 +152,10 @@ Journey to Citizen is an informational tool for planning purposes only. We do no
 
 ## Consent
 
-By using Journey to Citizen, you consent to this Privacy Policy and our collection and use of information as described.
+By using Journey to Citizen, you acknowledge that you have read and understood this Privacy Policy, the Important Notice regarding the side project nature of this app, and you consent to our collection and use of information as described. You agree to use this app at your own risk and to verify all information with official IRCC sources.
 
 ---
 
-**Effective Date:** December 16, 2025
+**Effective Date:** February 2, 2026
 
-**Version:** 1.0.0
+**Version:** 2.0.0
