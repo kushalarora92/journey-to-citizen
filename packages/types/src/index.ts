@@ -363,3 +363,10 @@ export function convertLegacyToStatusHistory(profile: UserProfile): StatusEntry[
   // Sort by date (oldest first)
   return entries.sort((a, b) => new Date(a.from).getTime() - new Date(b.from).getTime());
 }
+
+// ============================================================================
+// RE-EXPORTS
+// ============================================================================
+
+// App version configuration types (for force update feature)
+export * from './appVersion';

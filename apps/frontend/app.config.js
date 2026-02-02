@@ -2,7 +2,7 @@ module.exports = {
   expo: {
     name: 'Journey to Citizen',
     slug: 'journey-to-citizen',
-    version: '1.0.2',
+    version: '1.1.0',
     orientation: 'portrait',
     icon: './assets/images/icon.png',
     scheme: 'journey-to-citizen',
@@ -20,7 +20,7 @@ module.exports = {
       backgroundColor: '#ffffff',
     },
     ios: {
-      version: '1.0',
+      version: '1.1',
       supportsTablet: true,
       bundleIdentifier: 'com.kodianlabs.journeytocitizen',
       googleServicesFile: process.env.GOOGLE_SERVICE_INFO_PLIST || './GoogleService-Info.plist',
@@ -29,7 +29,7 @@ module.exports = {
       },
     },
     android: {
-      versionName: '1.0',
+      versionName: '1.1',
       adaptiveIcon: {
         foregroundImage: './assets/images/adaptive-icon.png',
         backgroundColor: '#ffffff',
