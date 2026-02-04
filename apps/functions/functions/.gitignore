@@ -9,6 +9,9 @@ typings/
 node_modules/
 *.local
 
+# Package lock (Firebase Cloud Build uses npm install, not npm ci)
+package-lock.json
+
 # Firebase Service Accounts & Secrets
 serviceAccountKey.json
 *-firebase-adminsdk-*.json

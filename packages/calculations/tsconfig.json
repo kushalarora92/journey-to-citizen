@@ -8,6 +8,7 @@
     "noEmit": false,
     "lib": ["ES2017", "DOM"],
     "target": "ES2017",
+    "module": "commonjs",
     "moduleResolution": "node",
     "composite": true
   },

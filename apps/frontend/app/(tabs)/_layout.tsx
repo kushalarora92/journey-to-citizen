@@ -113,20 +113,6 @@ export default function TabLayout() {
         // Custom header title component for desktop web (shows navigation)
         // On mobile web and native, use default title
         headerTitle: (Platform.OS === 'web' && isDesktop) ? () => <WebNavigationBar /> : undefined,
-
-        // Add logout button on right side of header
-        headerRight: () => (
-            <Pressable onPress={handleLogout}>
-              {({ pressed }) => (
-                <FontAwesome
-                  name="sign-out"
-                  size={25}
-                  color={Colors[colorScheme ?? 'light'].text}
-                  style={{ marginRight: 15, opacity: pressed ? 0.5 : 1 }}
-                />
-              )}
-            </Pressable>
-          ),
         // Add subtle shadow/elevation to header
         headerStyle: {
           shadowColor: '#000',

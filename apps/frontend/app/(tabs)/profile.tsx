@@ -1,16 +1,18 @@
 import { useState } from 'react';
-import { StyleSheet, ScrollView, TouchableOpacity, Alert, Platform, TextInput, Modal, Pressable } from 'react-native';
+import { StyleSheet, ScrollView, TouchableOpacity, Alert, Platform, TextInput, Modal, Pressable, Linking } from 'react-native';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import WebDateInput from '@/components/WebDateInput';
 import { useColorScheme } from '@/components/useColorScheme';
 import { useAnalytics, useScreenTracking } from '@/hooks/useAnalytics';
+import { useRouter } from 'expo-router';
 
 import { Text, View } from '@/components/Themed';
 import { useAuth } from '@/context/AuthContext';
 import { useFirebaseFunctions } from '@/hooks/useFirebaseFunctions';
 import DateRangeList, { DateRangeEntry } from '@/components/DateRangeList';
 import StatusTimeline from '@/components/StatusTimeline';
+import DeleteAccountModal from '@/components/DeleteAccountModal';
 import { 
   PresenceEntry, 
   IMMIGRATION_STATUS_LABELS, 
@@ -29,8 +31,9 @@ import {
 
 export default function ProfileScreen() {
   const colorScheme = useColorScheme();
-  const { user, userProfile, profileLoading, sendVerificationEmail, updateLocalProfile } = useAuth();
-  const { updateUserProfile } = useFirebaseFunctions();
+  const router = useRouter();
+  const { user, userProfile, profileLoading, sendVerificationEmail, updateLocalProfile, logout } = useAuth();
+  const { updateUserProfile, scheduleAccountDeletion, cancelAccountDeletion } = useFirebaseFunctions();
   const { trackEvent } = useAnalytics();
   
   // Track screen view
@@ -52,6 +55,7 @@ export default function ProfileScreen() {
   const [editedPRDate, setEditedPRDate] = useState<Date | null>(null);
   const [showPRDatePicker, setShowPRDatePicker] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
 
   const handleEditNamePress = () => {
     trackProfileAction('edit_name_click');
@@ -90,6 +94,35 @@ export default function ProfileScreen() {
       Platform.OS === 'web' ? alert(`Error: ${errorMessage}`) : Alert.alert('Error', errorMessage);
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  const handleDeleteAccount = async () => {
+    trackProfileAction('delete_account_confirmed');
+    
+    try {
+      // Schedule account deletion (30-day grace period)
+      const result = await scheduleAccountDeletion();
+      
+      if (result.success && result.data) {
+        trackProfileAction('delete_account_scheduled', { 
+          deletion_date: result.data.deletionDate 
+        });
+        
+        // Logout user (will redirect to auth screen)
+        await logout();
+        
+        // Show success message
+        const successMessage = `Account deletion scheduled for ${result.data.deletionDate}. You have 30 days to cancel by signing in again.`;
+        if (Platform.OS === 'web') {
+          alert(successMessage);
+        } else {
+          Alert.alert('Deletion Scheduled', successMessage);
+        }
+      }
+    } catch (error: any) {
+      trackProfileAction('delete_account_error', { error: error.message });
+      throw error; // Let the modal handle the error display
     }
   };
 
@@ -744,8 +777,123 @@ export default function ProfileScreen() {
             to get accurate citizenship eligibility calculations.
           </Text>
         </Pressable>
+
+        {/* Account Management Section */}
+        <View style={styles.accountManagementSection}>
+          <Text style={styles.accountManagementTitle}>Account Management</Text>
+          
+          {/* Email */}
+          <View style={styles.accountManagementItem}>
+            <FontAwesome name="envelope" size={18} color="#64748b" />
+            <Text style={styles.accountManagementLabel}>Email</Text>
+            <Text style={styles.accountManagementValue}>{user?.email}</Text>
+          </View>
+
+          {/* Privacy Policy */}
+          <TouchableOpacity 
+            style={styles.accountManagementItem}
+            onPress={() => {
+              trackProfileAction('legal_link_click', { page: 'privacy' });
+              if (Platform.OS === 'web') {
+                window.open('/privacy', '_blank');
+              } else {
+                router.push('/privacy');
+              }
+            }}
+          >
+            <FontAwesome name="shield" size={18} color="#64748b" />
+            <Text style={styles.accountManagementLabel}>Privacy Policy</Text>
+            <FontAwesome name="chevron-right" size={14} color="#94a3b8" />
+          </TouchableOpacity>
+
+          {/* Terms of Service */}
+          <TouchableOpacity 
+            style={styles.accountManagementItem}
+            onPress={() => {
+              trackProfileAction('legal_link_click', { page: 'terms' });
+              if (Platform.OS === 'web') {
+                window.open('/terms', '_blank');
+              } else {
+                router.push('/terms');
+              }
+            }}
+          >
+            <FontAwesome name="file-text" size={18} color="#64748b" />
+            <Text style={styles.accountManagementLabel}>Terms of Service</Text>
+            <FontAwesome name="chevron-right" size={14} color="#94a3b8" />
+          </TouchableOpacity>
+
+          {/* Support & Help */}
+          <TouchableOpacity 
+            style={[styles.accountManagementItem, styles.accountManagementItemLast]}
+            onPress={() => {
+              trackProfileAction('legal_link_click', { page: 'support' });
+              router.push('/support' as any);
+            }}
+          >
+            <FontAwesome name="question-circle" size={18} color="#64748b" />
+            <Text style={styles.accountManagementLabel}>Support & Help</Text>
+            <FontAwesome name="chevron-right" size={14} color="#94a3b8" />
+          </TouchableOpacity>
+
+          {/* Logout Button - Danger Red */}
+          <TouchableOpacity 
+            style={styles.logoutButton}
+            onPress={() => {
+              trackProfileAction('logout_button_click');
+              if (Platform.OS === 'web') {
+                if (window.confirm('Are you sure you want to logout?')) {
+                  logout().catch(() => {
+                    alert('Failed to logout');
+                  });
+                }
+              } else {
+                Alert.alert(
+                  'Logout',
+                  'Are you sure you want to logout?',
+                  [
+                    { text: 'Cancel', style: 'cancel' },
+                    { 
+                      text: 'Logout', 
+                      style: 'destructive',
+                      onPress: async () => {
+                        try {
+                          await logout();
+                        } catch (error) {
+                          Alert.alert('Error', 'Failed to logout');
+                        }
+                      }
+                    },
+                  ]
+                );
+              }
+            }}
+          >
+            <FontAwesome name="sign-out" size={18} color="#fff" />
+            <Text style={styles.logoutButtonText}>Logout</Text>
+          </TouchableOpacity>
+
+          {/* Delete Account Button - Subtle */}
+          <TouchableOpacity 
+            style={styles.deleteAccountButton}
+            onPress={() => {
+              trackProfileAction('delete_account_button_click');
+              setShowDeleteModal(true);
+            }}
+          >
+            <Text style={styles.deleteAccountText}>Delete Account</Text>
+          </TouchableOpacity>
+        </View>
       </View>
       <View style={styles.separator} lightColor="#eee" darkColor="rgba(255,255,255,0.1)" />
+
+      {/* Delete Account Modal */}
+      <DeleteAccountModal
+        visible={showDeleteModal}
+        onClose={() => setShowDeleteModal(false)}
+        onConfirm={handleDeleteAccount}
+        userEmail={user?.email || ''}
+      />
     </ScrollView>
   );
 }
@@ -944,5 +1092,79 @@ const styles = StyleSheet.create({
   linkText: {
     fontWeight: '600',
     color: '#3b82f6',
+  },
+  accountManagementSection: {
+    marginTop: 32,
+    padding: 16,
+    backgroundColor: '#f8fafc',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
+  },
+  accountManagementTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    marginBottom: 16,
+    color: '#1e293b',
+  },
+  accountManagementItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#e2e8f0',
+  },
+  accountManagementItemLast: {
+    borderBottomWidth: 0,
+  },
+  accountManagementLabel: {
+    flex: 1,
+    fontSize: 14,
+    color: '#475569',
+    marginLeft: 12,
+  },
+  accountManagementValue: {
+    fontSize: 14,
+    color: '#1e293b',
+    fontWeight: '500',
+  },
+  accountManagementLink: {
+    fontSize: 14,
+    color: '#3b82f6',
+    fontWeight: '500',
+  },
+  logoutButton: {
+    marginTop: 16,
+    padding: 16,
+    backgroundColor: '#dc2626',
+    borderRadius: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+    elevation: 2,
+  },
+  logoutButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#fff',
+    marginLeft: 8,
+  },
+  deleteAccountButton: {
+    marginTop: 12,
+    padding: 14,
+    backgroundColor: 'transparent',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#cbd5e1',
+    alignItems: 'center',
+  },
+  deleteAccountText: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#64748b',
   },
 });

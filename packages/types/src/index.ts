@@ -65,6 +65,17 @@ export const STATUS_TYPE_LABELS: Record<StatusType, string> = {
 };
 
 /**
+ * Account deletion status
+ */
+export const DELETION_STATUS = {
+  ACTIVE: 'active',
+  SCHEDULED_FOR_DELETION: 'scheduled_for_deletion',
+  DELETED: 'deleted',
+} as const;
+
+export type DeletionStatus = typeof DELETION_STATUS[keyof typeof DELETION_STATUS];
+
+/**
  * Immigration status entry for timeline
  * Represents a period with a specific immigration status
  */
@@ -128,6 +139,11 @@ export interface UserProfile {
   email: string | null;
   displayName?: string | null;
   profileComplete?: boolean;
+  
+  // Account deletion tracking
+  deletionStatus?: DeletionStatus; // Current deletion status (default: 'active')
+  deletionScheduledAt?: any; // Firestore Timestamp - when deletion was requested
+  deletionExecutionDate?: string; // ISO date string - when deletion will execute (30 days after request)
   
   // NEW: Timeline-based immigration history (preferred)
   // Represents complete immigration journey with status changes

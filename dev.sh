@@ -64,7 +64,7 @@ deploy_functions() {
     read -r response
     if [[ "$response" =~ ^([yY][eE][sS]|[yY])$ ]]; then
         echo -e "${GREEN}Deploying functions...${NC}"
-        firebase deploy --only functions
+        pnpm deploy:functions
         echo -e "${GREEN}✓ Functions deployed!${NC}"
     else
         echo "Deployment cancelled"

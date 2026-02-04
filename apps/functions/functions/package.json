@@ -9,15 +9,17 @@
     "start": "npm run shell",
     "deploy": "firebase deploy --only functions",
     "logs": "firebase functions:log",
-    "copy-types": "node ./copy-types.js"
+    "copy-types": "node ./copy-types.js",
+    "gcp-build": "npm install && tsc"
   },
   "engines": {
     "node": "20"
   },
   "main": "lib/index.js",
   "dependencies": {
-    "@journey-to-citizen/calculations": "file:./calculations",
-    "@journey-to-citizen/types": "file:./types",
+    "@google-cloud/tasks": "^6.2.1",
+    "@journey-to-citizen/calculations": "file:journey-to-citizen-calculations-0.0.1.tgz",
+    "@journey-to-citizen/types": "file:journey-to-citizen-types-0.0.1.tgz",
     "firebase-admin": "^12.7.0",
     "firebase-functions": "^6.0.1"
   },

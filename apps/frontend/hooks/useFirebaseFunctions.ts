@@ -27,8 +27,34 @@ export const useFirebaseFunctions = () => {
     return result.data;
   };
 
+  /**
+   * Schedule account deletion (30-day grace period)
+   */
+  const scheduleAccountDeletion = async (): Promise<ApiResponse<{ deletionDate: string }>> => {
+    const scheduleAccountDeletionFn = httpsCallable<void, ApiResponse<{ deletionDate: string }>>(
+      functions,
+      'scheduleAccountDeletion'
+    );
+    const result: HttpsCallableResult<ApiResponse<{ deletionDate: string }>> = await scheduleAccountDeletionFn();
+    return result.data;
+  };
+
+  /**
+   * Cancel scheduled account deletion and reactivate account
+   */
+  const cancelAccountDeletion = async (): Promise<ApiResponse<null>> => {
+    const cancelAccountDeletionFn = httpsCallable<void, ApiResponse<null>>(
+      functions,
+      'cancelAccountDeletion'
+    );
+    const result: HttpsCallableResult<ApiResponse<null>> = await cancelAccountDeletionFn();
+    return result.data;
+  };
+
   return {
     getUserInfo,
     updateUserProfile,
+    scheduleAccountDeletion,
+    cancelAccountDeletion,
   };
 };

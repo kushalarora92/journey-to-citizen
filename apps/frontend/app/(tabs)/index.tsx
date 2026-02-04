@@ -5,6 +5,7 @@ import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { Text, View } from '@/components/Themed';
 import { useAuth } from '@/context/AuthContext';
 import { useAnalytics, useScreenTracking } from '@/hooks/useAnalytics';
+import DeletionScheduledBanner from '@/components/DeletionScheduledBanner';
 import { 
   getEligibility, 
   getUpcomingTrips, 
@@ -17,6 +18,7 @@ import {
   hasPRStatus, 
   hasCountableDays,
   STATUS_TYPE_LABELS,
+  DELETION_STATUS,
 } from '@journey-to-citizen/types';
 import {
   calculateProjection,
@@ -69,6 +71,12 @@ export default function TabOneScreen() {
 
   return (
     <ScrollView style={styles.container}>
+      {/* Account Deletion Warning - Show at top if scheduled */}
+      {userProfile?.deletionStatus === DELETION_STATUS.SCHEDULED_FOR_DELETION && 
+       userProfile?.deletionExecutionDate && (
+        <DeletionScheduledBanner deletionDate={userProfile.deletionExecutionDate} />
+      )}
+
       {/* Header */}
       <Pressable 
         style={[styles.header, { cursor: 'auto' }]}

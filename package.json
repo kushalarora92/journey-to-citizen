@@ -9,8 +9,9 @@
     "lint": "turbo run lint",
     "test": "turbo run test",
     "build:web": "pnpm --filter journey-to-citizen-frontend run build:web",
+    "build:functions": "cd packages/types && pnpm build && cd ../calculations && pnpm build && cd ../../apps/functions/functions && pnpm run copy-types && pnpm run build",
     "deploy:web": "pnpm run build:web && firebase deploy --only hosting",
-    "deploy:functions": "firebase deploy --only functions",
+    "deploy:functions": "pnpm run build:functions && firebase deploy --only functions",
     "deploy:all": "pnpm run build:web && firebase deploy"
   },
   "keywords": [],

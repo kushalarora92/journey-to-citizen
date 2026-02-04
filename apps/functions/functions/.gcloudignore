@@ -1,0 +1,46 @@
+# This file specifies files that should not be uploaded to Google Cloud
+# when deploying functions. It works similarly to .gitignore.
+
+# Compiled JavaScript files (we upload them)
+# lib/
+
+# TypeScript source files (not needed in production)
+src/
+
+# Development files
+*.local
+.eslintrc.js
+.eslintignore
+tsconfig.dev.json
+
+# Node.js dependency directory (will be installed by Cloud Build)
+node_modules/
+
+# Environment variables (use Firebase config instead)
+.env
+.env.local
+.env.*.local
+
+# Keys and certificates
+*.key
+*.pem
+*.p12
+serviceAccountKey.json
+*-firebase-adminsdk-*.json
+.runtimeconfig.json
+
+# Build scripts (not needed in Cloud Build)
+copy-types.js
+
+# Git files
+.git/
+.gitignore
+
+# Copied directories (we use .tgz files instead)
+types/
+calculations/
+
+# IMPORTANT: Do NOT ignore these - they're needed for deployment
+!package-lock.json
+!*.tgz
+!lib/
