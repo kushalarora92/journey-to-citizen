@@ -94,8 +94,9 @@ export default function PrivacyPolicyScreen() {
               <Heading size="md" mt="$2">Data Retention</Heading>
               <VStack space="xs" ml="$4">
                 <Text>• <Text fontWeight="$bold">Active Accounts:</Text> Data retained as long as your account is active</Text>
-                <Text>• <Text fontWeight="$bold">Account Deletion:</Text> You can request account deletion at any time by contacting support</Text>
-                <Text>• <Text fontWeight="$bold">Deleted Data:</Text> Permanently removed within 30 days of deletion request</Text>
+                <Text>• <Text fontWeight="$bold">Account Deletion:</Text> You can request account deletion at any time from your Profile settings</Text>
+                <Text>• <Text fontWeight="$bold">30-Day Grace Period:</Text> When you request deletion, your account is scheduled for deletion after 30 days. During this period, you can cancel the deletion and reactivate your account by logging in</Text>
+                <Text>• <Text fontWeight="$bold">Permanent Deletion:</Text> After 30 days, all your data (profile, travel history, presence records) is permanently deleted from our systems</Text>
               </VStack>
             </VStack>
 
@@ -106,7 +107,7 @@ export default function PrivacyPolicyScreen() {
               <VStack space="xs" ml="$4">
                 <Text>• <Text fontWeight="$bold">Access:</Text> View all data we have about you through the app</Text>
                 <Text>• <Text fontWeight="$bold">Correction:</Text> Update or correct your information in your profile</Text>
-                <Text>• <Text fontWeight="$bold">Deletion:</Text> Request deletion of your account and data (processed within 30 days)</Text>
+                <Text>• <Text fontWeight="$bold">Deletion:</Text> Request deletion of your account and data from Profile settings. Your account enters a 30-day grace period, after which all data is permanently deleted. You can cancel during this period.</Text>
                 <Text>• <Text fontWeight="$bold">Export:</Text> Request a copy of your data in a portable format (feature in development - contact support)</Text>
                 <Text>• <Text fontWeight="$bold">Opt-Out:</Text> Disable analytics tracking (feature in development - currently limited to browser/device settings)</Text>
               </VStack>

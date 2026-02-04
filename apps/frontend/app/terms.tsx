@@ -153,9 +153,19 @@ export default function TermsOfServiceScreen() {
               </Text>
             </VStack>
 
+            {/* Termination */}
+            <VStack space="sm">
+              <Heading size="lg">12. Termination</Heading>
+              <Text>
+                We reserve the right to suspend or terminate accounts at any time, with or without notice, 
+                for any reason including violation of these Terms. Users may request deletion through 
+                the app. See our Privacy Policy for details on data retention and deletion.
+              </Text>
+            </VStack>
+
             {/* Changes to Terms */}
             <VStack space="sm">
-              <Heading size="lg">12. Changes to Terms</Heading>
+              <Heading size="lg">13. Changes to Terms</Heading>
               <Text>
                 We reserve the right to modify these Terms at any time. We will notify users of significant 
                 changes by updating the "Last Updated" date and displaying an in-app notice. Your continued 
@@ -165,7 +175,7 @@ export default function TermsOfServiceScreen() {
 
             {/* Contact */}
             <VStack space="sm">
-              <Heading size="lg">13. Contact</Heading>
+              <Heading size="lg">14. Contact</Heading>
               <Text>For questions about these Terms, contact us at:</Text>
               <VStack space="xs" ml="$4">
                 <Text>• <Text fontWeight="$bold">Email:</Text> support@journeytocitizen.com</Text>

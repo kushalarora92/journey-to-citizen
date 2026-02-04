@@ -73,9 +73,10 @@ export default function SupportScreen() {
               <VStack space="sm">
                 <Heading size="md">How do I delete my account?</Heading>
                 <Text>
-                  To delete your account and all associated data, please contact us at 
-                  support@journeytocitizen.com with your request. Your data will be permanently 
-                  removed within 30 days.
+                  Go to Profile → Delete Account to request deletion. Your account will be scheduled for 
+                  deletion after a 30-day grace period. During these 30 days, you can cancel the deletion 
+                  and reactivate your account by simply logging in. After 30 days, all your data will be 
+                  permanently deleted.
                 </Text>
               </VStack>
 
