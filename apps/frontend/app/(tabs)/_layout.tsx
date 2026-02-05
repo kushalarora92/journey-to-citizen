@@ -130,10 +130,10 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
-        name="absences"
+        name="timeline"
         options={{
-          title: 'Travel',
-          tabBarIcon: ({ color }) => <TabBarIcon name="plane" color={color} />,
+          title: 'Timeline',
+          tabBarIcon: ({ color }) => <TabBarIcon name="history" color={color} />,
         }}
       />
       <Tabs.Screen

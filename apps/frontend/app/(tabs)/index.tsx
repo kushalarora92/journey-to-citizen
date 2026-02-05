@@ -109,7 +109,7 @@ export default function TabOneScreen() {
           style={styles.upcomingBox}
           onPress={() => {
             trackDashboardClick('upcoming_trips_alert', { trip_count: upcomingTrips });
-            router.push('/(tabs)/absences' as any);
+            router.push('/(tabs)/timeline' as any);
           }}
         >
           <FontAwesome name="plane" size={18} color="#f59e0b" />
@@ -299,12 +299,12 @@ export default function TabOneScreen() {
             <TouchableOpacity 
               style={styles.actionButton}
               onPress={() => {
-                trackDashboardClick('quick_action_manage_travel');
-                router.push('/(tabs)/absences' as any);
+                trackDashboardClick('quick_action_view_timeline');
+                router.push('/(tabs)/timeline' as any);
               }}
             >
-              <FontAwesome name="plane" size={16} color="#3b82f6" />
-              <Text style={styles.actionButtonText}>Manage Travel History</Text>
+              <FontAwesome name="history" size={16} color="#3b82f6" />
+              <Text style={styles.actionButtonText}>View Timeline</Text>
               <FontAwesome name="chevron-right" size={12} color="#94a3b8" />
             </TouchableOpacity>
           </View>
@@ -422,12 +422,12 @@ export default function TabOneScreen() {
             <TouchableOpacity 
               style={styles.actionButton}
               onPress={() => {
-                trackDashboardClick('quick_action_manage_travel');
-                router.push('/(tabs)/absences' as any);
+                trackDashboardClick('quick_action_view_timeline');
+                router.push('/(tabs)/timeline' as any);
               }}
             >
-              <FontAwesome name="plane" size={16} color="#3b82f6" />
-              <Text style={styles.actionButtonText}>Manage Travel History</Text>
+              <FontAwesome name="history" size={16} color="#3b82f6" />
+              <Text style={styles.actionButtonText}>View Timeline</Text>
               <FontAwesome name="chevron-right" size={12} color="#94a3b8" />
             </TouchableOpacity>
           </View>

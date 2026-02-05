@@ -7,6 +7,7 @@
  * - Need 1095 days (3 years) of physical presence in Canada within 5 years before applying
  * - Days as PR count fully
  * - Days before PR on work/study permit or protected person count as 0.5 days (max 365 credit)
+ * - Absences during pre-PR periods are deducted before applying the 0.5 multiplier
  * - Visitor days do NOT count
  * - Departure and return days count as present in Canada (only full days absent count)
  */
@@ -208,15 +209,44 @@ export function calculatePrePRCredit(
     // Merge overlapping presence entries to prevent double-counting
     const mergedPresence = mergeOverlappingDateRanges(countablePresence);
 
-    const totalPrePRDays = mergedPresence.reduce((total, entry) => {
+    // Calculate gross days from countable status periods
+    let grossPrePRDays = 0;
+    const countableRanges: { from: Date; to: Date }[] = [];
+    
+    mergedPresence.forEach(entry => {
       const from = parseDate(entry.from);
       const to = parseDate(entry.to);
       const days = daysBetween(from, to) + 1; // +1 to include both start and end days
-      return total + days;
-    }, 0);
+      grossPrePRDays += days;
+      countableRanges.push({ from, to });
+    });
+
+    // Deduct absences that occurred during pre-PR countable periods
+    let absenceDaysDeducted = 0;
+    if (profile.travelAbsences && profile.travelAbsences.length > 0) {
+      profile.travelAbsences.forEach((absence: AbsenceEntry) => {
+        const absenceFrom = parseDate(absence.from);
+        const absenceTo = parseDate(absence.to);
+
+        // Check each countable range for overlap with this absence
+        countableRanges.forEach((range) => {
+          const overlapStart = new Date(Math.max(absenceFrom.getTime(), range.from.getTime()));
+          const overlapEnd = new Date(Math.min(absenceTo.getTime(), range.to.getTime()));
+
+          if (overlapStart < overlapEnd) {
+            // Per IRCC rules: departure and return days count as present
+            const overlapDays = daysBetween(overlapStart, overlapEnd);
+            const fullDaysAbsent = Math.max(0, overlapDays - 1);
+            absenceDaysDeducted += fullDaysAbsent;
+          }
+        });
+      });
+    }
+
+    const netPrePRDays = Math.max(0, grossPrePRDays - absenceDaysDeducted);
 
     // Each day before PR counts as 0.5 days, max 365 days credit
-    return Math.min(Math.floor(totalPrePRDays * 0.5), MAX_PRE_PR_CREDIT);
+    return Math.min(Math.floor(netPrePRDays * 0.5), MAX_PRE_PR_CREDIT);
   }
   
   // Fallback to legacy presenceInCanada if helper returned empty
@@ -229,14 +259,41 @@ export function calculatePrePRCredit(
     if (countableLegacyPresence.length > 0) {
       const mergedPresence = mergeOverlappingDateRanges(countableLegacyPresence);
 
-      const totalPrePRDays = mergedPresence.reduce((total, entry) => {
+      // Calculate gross days
+      let grossPrePRDays = 0;
+      const countableRanges: { from: Date; to: Date }[] = [];
+      
+      mergedPresence.forEach(entry => {
         const from = parseDate(entry.from);
         const to = parseDate(entry.to);
         const days = daysBetween(from, to) + 1;
-        return total + days;
-      }, 0);
+        grossPrePRDays += days;
+        countableRanges.push({ from, to });
+      });
 
-      return Math.min(Math.floor(totalPrePRDays * 0.5), MAX_PRE_PR_CREDIT);
+      // Deduct absences during legacy presence periods
+      let absenceDaysDeducted = 0;
+      if (profile.travelAbsences && profile.travelAbsences.length > 0) {
+        profile.travelAbsences.forEach((absence: AbsenceEntry) => {
+          const absenceFrom = parseDate(absence.from);
+          const absenceTo = parseDate(absence.to);
+
+          countableRanges.forEach((range) => {
+            const overlapStart = new Date(Math.max(absenceFrom.getTime(), range.from.getTime()));
+            const overlapEnd = new Date(Math.min(absenceTo.getTime(), range.to.getTime()));
+
+            if (overlapStart < overlapEnd) {
+              const overlapDays = daysBetween(overlapStart, overlapEnd);
+              const fullDaysAbsent = Math.max(0, overlapDays - 1);
+              absenceDaysDeducted += fullDaysAbsent;
+            }
+          });
+        });
+      }
+
+      const netPrePRDays = Math.max(0, grossPrePRDays - absenceDaysDeducted);
+
+      return Math.min(Math.floor(netPrePRDays * 0.5), MAX_PRE_PR_CREDIT);
     }
   }
 
