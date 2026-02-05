@@ -1,6 +1,7 @@
-import { StyleSheet, ScrollView, TouchableOpacity, Pressable } from 'react-native';
+import { StyleSheet, ScrollView, TouchableOpacity, Pressable, Modal, Alert, Platform } from 'react-native';
 import { useRouter } from 'expo-router';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
+import { useState } from 'react';
 
 import { Text, View } from '@/components/Themed';
 import { useAuth } from '@/context/AuthContext';
@@ -30,6 +31,10 @@ export default function TabOneScreen() {
   const { user, userProfile, profileLoading } = useAuth();
   const { trackEvent } = useAnalytics();
   const isDesktop = useIsDesktop('md');
+  
+  // Info modal state
+  const [infoModalVisible, setInfoModalVisible] = useState(false);
+  const [infoModalContent, setInfoModalContent] = useState<{title: string; description: string} | null>(null);
   
   // Track screen view
   useScreenTracking('Dashboard');
@@ -69,6 +74,13 @@ export default function TabOneScreen() {
   const projectedCredit = projection.projectedCredit;
   const projectedEarliestDate = parseDate(projection.projectedEarliestDate);
 
+  // Handle info modal
+  const showInfoModal = (title: string, description: string) => {
+    setInfoModalContent({ title, description });
+    setInfoModalVisible(true);
+    trackEvent('dashboard_info_click', { info_type: title });
+  };
+
   return (
     <ScrollView style={styles.container}>
       {/* Account Deletion Warning - Show at top if scheduled */}
@@ -86,7 +98,7 @@ export default function TabOneScreen() {
       >
         <Text style={styles.greeting}>Welcome, eh!</Text>
         <Text style={styles.name}>
-          {profileLoading ? '...' : displayName} 👋
+          {profileLoading ? '...' : displayName}
         </Text>
       </Pressable>
 
@@ -105,24 +117,26 @@ export default function TabOneScreen() {
 
       {/* Upcoming Trips Alert */}
       {upcomingTrips > 0 && (
-        <TouchableOpacity 
-          style={styles.upcomingBox}
-          onPress={() => {
-            trackDashboardClick('upcoming_trips_alert', { trip_count: upcomingTrips });
-            router.push('/(tabs)/timeline' as any);
-          }}
-        >
-          <FontAwesome name="plane" size={18} color="#f59e0b" />
-          <View style={styles.upcomingContent}>
-            <Text style={styles.upcomingText}>
-              You have {upcomingTrips} upcoming {upcomingTrips === 1 ? 'trip' : 'trips'}
-            </Text>
-            <Text style={styles.upcomingSubtext}>
-              Tap to view details
-            </Text>
-          </View>
-          <FontAwesome name="chevron-right" size={14} color="#f59e0b" />
-        </TouchableOpacity>
+        <View style={styles.upcomingWrapper}>
+          <TouchableOpacity 
+            style={styles.upcomingBox}
+            onPress={() => {
+              trackDashboardClick('upcoming_trips_alert', { trip_count: upcomingTrips });
+              router.push('/(tabs)/timeline' as any);
+            }}
+          >
+            <FontAwesome name="plane" size={18} color="#f59e0b" />
+            <View style={styles.upcomingContent}>
+              <Text style={styles.upcomingText}>
+                You have {upcomingTrips} upcoming {upcomingTrips === 1 ? 'trip' : 'trips'}
+              </Text>
+              <Text style={styles.upcomingSubtext}>
+                Tap to view details
+              </Text>
+            </View>
+            <FontAwesome name="chevron-right" size={14} color="#f59e0b" />
+          </TouchableOpacity>
+        </View>
       )}
 
       {/* Main Content */}
@@ -148,7 +162,7 @@ export default function TabOneScreen() {
                 color={eligibility.isEligible ? "#10b981" : "#3b82f6"}
               />
               <Text style={styles.statusTitle}>
-                {eligibility.isEligible ? 'Eligible to Apply!' : 'Building Eligibility'}
+                {eligibility.isEligible ? 'Eligible for 🇨🇦 Citizenship!' : 'Building Eligibility 🇨🇦'}
               </Text>
             </View>
             
@@ -159,7 +173,7 @@ export default function TabOneScreen() {
             ) : (
               <View>
                 <Text style={styles.statusMessage}>
-                  Keep building your days in Canada. You're on track!
+                  Keep building your days in Canada for Canadian citizenship. You're on track!
                 </Text>
                 <Text style={styles.earliestDate}>
                   Earliest application date: <Text style={styles.dateHighlight}>
@@ -169,6 +183,22 @@ export default function TabOneScreen() {
               </View>
             )}
           </Pressable>
+
+          {/* Citizenship Requirements */}
+          {!eligibility.isEligible && (
+            <View style={styles.processExplanation}>
+              <Text style={styles.processTitle}>📋 Citizenship Requirements</Text>
+              <Text style={styles.processText}>
+                • Spend 3 years (1095 days) in Canada as PR{' '}
+              </Text>
+              <Text style={styles.processText}>
+                • Days before PR count as 0.5× (max 365 days){' '}
+              </Text>
+              <Text style={styles.processText}>
+                • Calculation uses a rolling 5-year window from application date
+              </Text>
+            </View>
+          )}
 
           {/* Progress Bar */}
           <Pressable 
@@ -209,41 +239,59 @@ export default function TabOneScreen() {
 
           {/* Statistics Grid */}
           <View style={styles.statsGrid}>
-            <Pressable 
-              style={[styles.statCard, { cursor: 'auto' }]}
-              onPress={() => trackDashboardClick('stat_card_click', {
-                stat_type: 'days_as_pr',
-                value: eligibility.daysInCanadaAsPR,
-              })}
+            <TouchableOpacity 
+              style={styles.statCard}
+              onPress={() => {
+                trackDashboardClick('stat_card_click', {
+                  stat_type: 'days_as_pr',
+                  value: eligibility.daysInCanadaAsPR,
+                });
+                showInfoModal(
+                  'Days as Permanent Resident',
+                  'This is the total number of days you\'ve been physically present in Canada since receiving your PR status. These days count fully (1:1) toward your citizenship eligibility requirement of 1095 days (3 years).'
+                );
+              }}
             >
               <FontAwesome name="home" size={20} color="#3b82f6" />
               <Text style={styles.statValue}>{eligibility.daysInCanadaAsPR}</Text>
-              <Text style={styles.statLabel}>Days as PR</Text>
-            </Pressable>
+              <Text style={styles.statLabel}>Days as Permanent Resident</Text>
+            </TouchableOpacity>
 
-            <Pressable 
-              style={[styles.statCard, { cursor: 'auto' }]}
-              onPress={() => trackDashboardClick('stat_card_click', {
-                stat_type: 'pre_pr_credit',
-                value: eligibility.preDaysCredit,
-              })}
+            <TouchableOpacity 
+              style={styles.statCard}
+              onPress={() => {
+                trackDashboardClick('stat_card_click', {
+                  stat_type: 'pre_pr_credit',
+                  value: eligibility.preDaysCredit,
+                });
+                showInfoModal(
+                  'Pre-PR Credit',
+                  'Days spent in Canada BEFORE becoming a PR count as half days (0.5×) toward citizenship, up to a maximum of 365 days credit (730 actual days). This includes time as a worker, student, or protected person. Note: Absences during this period are deducted before applying the 0.5× multiplier.'
+                );
+              }}
             >
               <FontAwesome name="star" size={20} color="#f59e0b" />
               <Text style={styles.statValue}>{eligibility.preDaysCredit}</Text>
               <Text style={styles.statLabel}>Pre-PR Credit</Text>
-            </Pressable>
+            </TouchableOpacity>
 
-            <Pressable 
-              style={[styles.statCard, { cursor: 'auto' }]}
-              onPress={() => trackDashboardClick('stat_card_click', {
-                stat_type: 'absence_days',
-                value: eligibility.totalAbsenceDays,
-              })}
+            <TouchableOpacity 
+              style={styles.statCard}
+              onPress={() => {
+                trackDashboardClick('stat_card_click', {
+                  stat_type: 'absence_days',
+                  value: eligibility.totalAbsenceDays,
+                });
+                showInfoModal(
+                  'Absence Days',
+                  'Total days you were absent from Canada (trips outside the country). Only FULL days absent count - your departure and return days count as days present in Canada. These absences reduce your eligible days count.'
+                );
+              }}
             >
               <FontAwesome name="plane" size={20} color="#ef4444" />
               <Text style={styles.statValue}>{eligibility.totalAbsenceDays}</Text>
               <Text style={styles.statLabel}>Absence Days</Text>
-            </Pressable>
+            </TouchableOpacity>
           </View>
 
           {/* How It's Calculated */}
@@ -260,7 +308,7 @@ export default function TabOneScreen() {
               <FontAwesome name="calculator" size={14} /> How We Calculate
             </Text>
             <View style={styles.calculationRow}>
-              <Text style={styles.calculationLabel}>+ Days as PR:</Text>
+              <Text style={styles.calculationLabel}>+ Days as Permanent Resident:</Text>
               <Text style={styles.calculationValue}>{eligibility.daysInCanadaAsPR}</Text>
             </View>
             <View style={styles.calculationRow}>
@@ -278,7 +326,7 @@ export default function TabOneScreen() {
             </View>
             
             <Text style={styles.calculationNote}>
-              Note: Only the last 5 years count toward citizenship eligibility. Each day before PR counts as 0.5 days (max 365). Departure and return days count as present in Canada.
+              Note: Departure and return days count as present in Canada.
             </Text>
           </Pressable>
 
@@ -288,23 +336,23 @@ export default function TabOneScreen() {
             <TouchableOpacity 
               style={styles.actionButton}
               onPress={() => {
-                trackDashboardClick('quick_action_update_profile');
-                router.push('/(tabs)/profile' as any);
-              }}
-            >
-              <FontAwesome name="user" size={16} color="#3b82f6" />
-              <Text style={styles.actionButtonText}>Update Profile</Text>
-              <FontAwesome name="chevron-right" size={12} color="#94a3b8" />
-            </TouchableOpacity>
-            <TouchableOpacity 
-              style={styles.actionButton}
-              onPress={() => {
                 trackDashboardClick('quick_action_view_timeline');
                 router.push('/(tabs)/timeline' as any);
               }}
             >
               <FontAwesome name="history" size={16} color="#3b82f6" />
               <Text style={styles.actionButtonText}>View Timeline</Text>
+              <FontAwesome name="chevron-right" size={12} color="#94a3b8" />
+            </TouchableOpacity>
+            <TouchableOpacity 
+              style={styles.actionButton}
+              onPress={() => {
+                trackDashboardClick('quick_action_update_profile');
+                router.push('/(tabs)/profile' as any);
+              }}
+            >
+              <FontAwesome name="user" size={16} color="#3b82f6" />
+              <Text style={styles.actionButtonText}>Update Profile</Text>
               <FontAwesome name="chevron-right" size={12} color="#94a3b8" />
             </TouchableOpacity>
           </View>
@@ -465,6 +513,43 @@ export default function TabOneScreen() {
           </View>
         </View>
       )}
+
+      {/* Info Modal */}
+      <Modal
+        visible={infoModalVisible}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setInfoModalVisible(false)}
+      >
+        <Pressable 
+          style={styles.modalOverlay}
+          onPress={() => setInfoModalVisible(false)}
+        >
+          <Pressable 
+            style={styles.infoModalContent}
+            onPress={(e) => e.stopPropagation()}
+          >
+            <View style={styles.infoModalHeader}>
+              <FontAwesome name="info-circle" size={24} color="#3b82f6" />
+              <TouchableOpacity onPress={() => setInfoModalVisible(false)}>
+                <FontAwesome name="times" size={24} color="#64748b" />
+              </TouchableOpacity>
+            </View>
+            {infoModalContent && (
+              <>
+                <Text style={styles.infoModalTitle}>{infoModalContent.title}</Text>
+                <Text style={styles.infoModalDescription}>{infoModalContent.description}</Text>
+              </>
+            )}
+            <TouchableOpacity 
+              style={styles.infoModalButton}
+              onPress={() => setInfoModalVisible(false)}
+            >
+              <Text style={styles.infoModalButtonText}>Got it!</Text>
+            </TouchableOpacity>
+          </Pressable>
+        </Pressable>
+      </Modal>
     </ScrollView>
   );
 }
@@ -475,8 +560,9 @@ const styles = StyleSheet.create({
     backgroundColor: '#f8fafc',
   },
   header: {
-    padding: 20,
+    paddingHorizontal: 20,
     paddingTop: 16,
+    paddingBottom: 8,
     backgroundColor: '#fff',
   },
   greeting: {
@@ -508,9 +594,12 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     flex: 1,
   },
+  upcomingWrapper: {
+    backgroundColor: '#fff',
+    paddingHorizontal: 20,
+    paddingBottom: 8,
+  },
   upcomingBox: {
-    margin: 20,
-    marginTop: 12,
     padding: 16,
     backgroundColor: '#fffbeb',
     borderRadius: 12,
@@ -621,6 +710,32 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#3b82f6',
   },
+  processExplanation: {
+    marginBottom: 16,
+    padding: 14,
+    backgroundColor: '#f0f9ff',
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#bfdbfe',
+  },
+  processTitle: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#1e40af',
+    marginBottom: 8,
+  },
+  processText: {
+    fontSize: 12,
+    color: '#1e40af',
+    lineHeight: 20,
+  },
+  processProgress: {
+    fontSize: 11,
+    color: '#64748b',
+    marginTop: 10,
+    fontStyle: 'italic',
+    lineHeight: 16,
+  },
   projectionText: {
     fontSize: 15,
     color: '#475569',
@@ -695,6 +810,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderWidth: 1,
     borderColor: '#e2e8f0',
+  },
+  statCardHeader: {
+    flexDirection: 'row',
+    width: '100%',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 4,
   },
   statValue: {
     fontSize: 24,
@@ -803,5 +925,53 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#475569',
     lineHeight: 18,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  infoModalContent: {
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    padding: 24,
+    width: '100%',
+    maxWidth: 400,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 8,
+    elevation: 5,
+  },
+  infoModalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  infoModalTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#1e293b',
+    marginBottom: 12,
+  },
+  infoModalDescription: {
+    fontSize: 15,
+    color: '#475569',
+    lineHeight: 24,
+    marginBottom: 20,
+  },
+  infoModalButton: {
+    backgroundColor: '#3b82f6',
+    padding: 14,
+    borderRadius: 10,
+    alignItems: 'center',
+  },
+  infoModalButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
   },
 });

@@ -64,7 +64,6 @@ export default function TimelineScreen() {
   const [showEndPicker, setShowEndPicker] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [expandedId, setExpandedId] = useState<string | null>(null);
-  const [fabMenuOpen, setFabMenuOpen] = useState(false);
   
   // Helper function for consistent tracking
   const trackTimelineAction = (action: string, params?: Record<string, any>) => {
@@ -478,6 +477,24 @@ export default function TimelineScreen() {
               </View>
             </HStack>
           </View>
+
+          {/* Quick Actions */}
+          <HStack space="md">
+            <TouchableOpacity 
+              style={styles.quickActionButton}
+              onPress={handleOpenAddTrip}
+            >
+              <FontAwesome name="plane" size={18} color="#3b82f6" />
+              <Text style={styles.quickActionText}>Add Trip</Text>
+            </TouchableOpacity>
+            <TouchableOpacity 
+              style={styles.quickActionButton}
+              onPress={handleOpenAddStatus}
+            >
+              <FontAwesome name="flag" size={18} color="#22c55e" />
+              <Text style={styles.quickActionText}>Add Status</Text>
+            </TouchableOpacity>
+          </HStack>
 
           {/* Timeline */}
           {timelineEvents.length === 0 ? (
@@ -1026,83 +1043,6 @@ export default function TimelineScreen() {
         </View>
       </Modal>
       </ScrollView>
-
-      {/* Floating Action Button with Menu */}
-      <View style={styles.fabContainer}>
-        {/* Menu Options */}
-        {fabMenuOpen && (
-          <View style={styles.fabMenu}>
-            <TouchableOpacity
-              style={styles.fabMenuItem}
-              onPress={() => {
-                setFabMenuOpen(false);
-                handleOpenAddTrip();
-              }}
-            >
-              <View style={styles.fabMenuItemContent}>
-                <View style={[styles.fabMenuIcon, { backgroundColor: '#eff6ff' }]}>
-                  <FontAwesome name="plane" size={16} color="#3b82f6" />
-                </View>
-                <Text style={styles.fabMenuText}>Add Trip</Text>
-              </View>
-            </TouchableOpacity>
-            
-            <TouchableOpacity
-              style={styles.fabMenuItem}
-              onPress={() => {
-                setFabMenuOpen(false);
-                handleOpenAddStatus();
-              }}
-            >
-              <View style={styles.fabMenuItemContent}>
-                <View style={[styles.fabMenuIcon, { backgroundColor: '#f0fdf4' }]}>
-                  <FontAwesome name="flag" size={16} color="#22c55e" />
-                </View>
-                <Text style={styles.fabMenuText}>Add Status</Text>
-              </View>
-            </TouchableOpacity>
-            
-            {!userHasPR && (
-              <TouchableOpacity
-                style={styles.fabMenuItem}
-                onPress={() => {
-                  setFabMenuOpen(false);
-                  handleStatusChange();
-                }}
-              >
-                <View style={styles.fabMenuItemContent}>
-                  <View style={[styles.fabMenuIcon, { backgroundColor: '#fdf2f8' }]}>
-                    <FontAwesome name="star" size={16} color="#ec4899" />
-                  </View>
-                  <Text style={styles.fabMenuText}>Got PR!</Text>
-                </View>
-              </TouchableOpacity>
-            )}
-          </View>
-        )}
-        
-        {/* Main FAB Button */}
-        <TouchableOpacity
-          style={styles.fab}
-          onPress={() => setFabMenuOpen(!fabMenuOpen)}
-          activeOpacity={0.8}
-        >
-          <FontAwesome 
-            name={fabMenuOpen ? "times" : "plus"} 
-            size={20} 
-            color="#fff" 
-          />
-        </TouchableOpacity>
-      </View>
-
-      {/* Backdrop */}
-      {fabMenuOpen && (
-        <TouchableOpacity
-          style={styles.fabBackdrop}
-          onPress={() => setFabMenuOpen(false)}
-          activeOpacity={1}
-        />
-      )}
     </View>
   );
 }
@@ -1158,6 +1098,28 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#64748b',
     lineHeight: 18,
+  },
+  quickActionButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    padding: 14,
+    backgroundColor: '#fff',
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  quickActionText: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#1e293b',
   },
   emptyState: {
     alignItems: 'center',
@@ -1336,71 +1298,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#3b82f6',
     fontWeight: '600',
-  },
-  // FAB styles
-  fabContainer: {
-    position: 'absolute',
-    bottom: Platform.OS === 'web' ? 24 : 80,
-    right: 20,
-    alignItems: 'flex-end',
-    zIndex: 1000,
-  },
-  fab: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: '#3b82f6',
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 8,
-  },
-  fabMenu: {
-    marginBottom: 16,
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 12,
-    elevation: 8,
-    minWidth: 180,
-  },
-  fabMenuItem: {
-    borderBottomWidth: 1,
-    borderBottomColor: '#f1f5f9',
-  },
-  fabMenuItemContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 14,
-    paddingHorizontal: 16,
-    gap: 12,
-  },
-  fabMenuIcon: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  fabMenuText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#1e293b',
-    flex: 1,
-  },
-  fabBackdrop: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: 'rgba(0, 0, 0, 0.3)',
-    zIndex: 999,
   },
   bottomNote: {
     padding: 14,

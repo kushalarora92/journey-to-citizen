@@ -195,14 +195,6 @@ export default function ProfileScreen() {
         {/* Account Management Section */}
         <View style={styles.accountManagementSection}>
           <Text style={styles.accountManagementTitle}>Account Management</Text>
-          
-          {/* Email */}
-          <View style={styles.accountManagementItem}>
-            <FontAwesome name="envelope" size={18} color="#64748b" />
-            <Text style={styles.accountManagementLabel}>Email</Text>
-            <Text style={styles.accountManagementValue}>{user?.email}</Text>
-          </View>
-
           {/* Privacy Policy */}
           <TouchableOpacity 
             style={styles.accountManagementItem}

@@ -1,5 +1,5 @@
 import { ScrollView, Platform, Linking } from 'react-native';
-import { Box, VStack, Heading, Text, Button, ButtonText, Link } from '@gluestack-ui/themed';
+import { Box, VStack, HStack, Heading, Text, Button, ButtonText, Link } from '@gluestack-ui/themed';
 import WebContainer from '@/components/WebContainer';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 
