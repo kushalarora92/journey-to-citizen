@@ -9,6 +9,7 @@ import {
   sendEmailVerification,
   onAuthStateChanged,
   GoogleAuthProvider,
+  OAuthProvider,
   signInWithPopup,
   signInWithCredential,
 } from 'firebase/auth';
@@ -16,12 +17,17 @@ import { auth } from '@/config/firebase';
 import { useFirebaseFunctions } from '@/hooks/useFirebaseFunctions';
 import { useAnalytics } from '@/hooks/useAnalytics';
 import { UserProfile } from '@journey-to-citizen/types';
+import * as Crypto from 'expo-crypto';
 
 // Conditionally import Google Sign-In for native platforms
 // Wrapped in try-catch to handle Expo Go where native modules aren't available
 let GoogleSignin: any = null;
 let statusCodes: any = null;
 let isGoogleSignInAvailable = false;
+
+// Conditionally import Apple Authentication for native platforms
+let AppleAuthentication: any = null;
+let isAppleAuthAvailable = false;
 
 if (Platform.OS !== 'web') {
   try {
@@ -34,6 +40,18 @@ if (Platform.OS !== 'web') {
     console.log('Google Sign-In native module not available on this platform');
     isGoogleSignInAvailable = false;
   }
+  
+  // Load Apple Authentication for iOS
+  if (Platform.OS === 'ios') {
+    try {
+      AppleAuthentication = require('expo-apple-authentication');
+      isAppleAuthAvailable = true;
+    } catch (error) {
+      console.debug('Apple Authentication not available (running in Expo Go?)');
+      console.log('Apple Authentication not available on this platform');
+      isAppleAuthAvailable = false;
+    }
+  }
 }
 
 interface AuthContextType {
@@ -44,6 +62,7 @@ interface AuthContextType {
   signUp: (email: string, password: string) => Promise<void>;
   signIn: (email: string, password: string) => Promise<void>;
   signInWithGoogle: () => Promise<void>;
+  signInWithApple: () => Promise<void>;
   logout: () => Promise<void>;
   resetPassword: (email: string) => Promise<void>;
   sendVerificationEmail: () => Promise<void>;
@@ -249,6 +268,98 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  const signInWithApple = async () => {
+    if (Platform.OS === 'web') {
+      // Web: Use Firebase's signInWithPopup with OAuthProvider
+      const provider = new OAuthProvider('apple.com');
+      provider.addScope('email');
+      provider.addScope('name');
+      
+      try {
+        const result = await signInWithPopup(auth, provider);
+        
+        // Profile will be fetched automatically by onAuthStateChanged
+        // Apple users always have verified emails
+        if (result.user) {
+          await fetchUserProfile(result.user);
+        }
+        
+        // Track login event
+        trackEvent('login', {
+          method: 'apple',
+        });
+      } catch (error: any) {
+        // Handle account exists with different credential
+        if (error.code === 'auth/account-exists-with-different-credential') {
+          throw new Error('An account already exists with this email. Please sign in with your email and password instead.');
+        }
+        throw error;
+      }
+    } else {
+      // Native: Use expo-apple-authentication
+      if (!isAppleAuthAvailable || !AppleAuthentication) {
+        throw new Error('Apple Sign-In is not available on this platform. Only available on iOS devices.');
+      }
+      
+      try {
+        // Generate nonce for security
+        const nonce = Math.random().toString(36).substring(2, 10);
+        const hashedNonce = await Crypto.digestStringAsync(
+          Crypto.CryptoDigestAlgorithm.SHA256,
+          nonce
+        );
+        
+        // Request Apple authentication
+        const appleCredential = await AppleAuthentication.signInAsync({
+          requestedScopes: [
+            AppleAuthentication.AppleAuthenticationScope.FULL_NAME,
+            AppleAuthentication.AppleAuthenticationScope.EMAIL,
+          ],
+          nonce: hashedNonce,
+        });
+        
+        // Get the identity token
+        const { identityToken } = appleCredential;
+        
+        if (!identityToken) {
+          throw new Error('No identity token returned from Apple Sign-In');
+        }
+        
+        // Create Firebase credential with the Apple ID token and nonce
+        const provider = new OAuthProvider('apple.com');
+        const credential = provider.credential({
+          idToken: identityToken,
+          rawNonce: nonce,
+        });
+        
+        // Sign in to Firebase with the credential
+        const result = await signInWithCredential(auth, credential);
+        
+        // Profile will be fetched automatically by onAuthStateChanged
+        if (result.user) {
+          await fetchUserProfile(result.user);
+        }
+        
+        // Track login event
+        trackEvent('login', {
+          method: 'apple',
+        });
+      } catch (error: any) {
+        // Handle account exists with different credential
+        if (error.code === 'auth/account-exists-with-different-credential') {
+          throw new Error('An account already exists with this email. Please sign in with your email and password instead.');
+        }
+        
+        // Handle user cancellation
+        if (error.code === 'ERR_REQUEST_CANCELED') {
+          throw new Error('Sign in was cancelled');
+        }
+        
+        throw error;
+      }
+    }
+  };
+
   const logout = async () => {
     setUserProfile(null);
     
@@ -293,6 +404,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     signUp,
     signIn,
     signInWithGoogle,
+    signInWithApple,
     logout,
     resetPassword,
     sendVerificationEmail,

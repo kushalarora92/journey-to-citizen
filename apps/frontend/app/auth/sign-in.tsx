@@ -22,14 +22,16 @@ import {
 } from '@gluestack-ui/themed';
 import { AuthBranding } from '@/components/AuthBranding';
 import { GoogleSignInButton } from '@/components/GoogleSignInButton';
+import { AppleSignInButton } from '@/components/AppleSignInButton';
 
 export default function SignInScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
+  const [appleLoading, setAppleLoading] = useState(false);
   const [error, setError] = useState('');
-  const { signIn, signInWithGoogle } = useAuth();
+  const { signIn, signInWithGoogle, signInWithApple } = useAuth();
 
   const handleSignIn = async () => {
     if (!email || !password) {
@@ -97,6 +99,35 @@ export default function SignInScreen() {
     }
   };
 
+  const handleAppleSignIn = async () => {
+    setAppleLoading(true);
+    setError('');
+
+    try {
+      await signInWithApple();
+      // Navigation is handled by _layout.tsx
+    } catch (err: any) {
+      console.error('Apple sign in error:', err);
+      
+      let errorMessage = err.message || 'Failed to sign in with Apple';
+      
+      // Don't show error for user cancellation
+      if (errorMessage === 'Sign in was cancelled') {
+        setAppleLoading(false);
+        return;
+      }
+      
+      setError(errorMessage);
+      
+      // Show alert on mobile
+      if (Platform.OS !== 'web') {
+        Alert.alert('Apple Sign In Error', errorMessage);
+      }
+    } finally {
+      setAppleLoading(false);
+    }
+  };
+
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -160,7 +191,7 @@ export default function SignInScreen() {
               <Button
                 size="lg"
                 onPress={handleSignIn}
-                isDisabled={loading || googleLoading}
+                isDisabled={loading || googleLoading || appleLoading}
               >
                 <ButtonText>{loading ? 'Signing In...' : 'Sign In'}</ButtonText>
               </Button>
@@ -171,6 +202,15 @@ export default function SignInScreen() {
                 <Text size="sm" color="$textLight500">or</Text>
                 <Divider flex={1} />
               </Box>
+
+              {/* Apple Sign-In Button - Only show on iOS native and web */}
+              {(Platform.OS === 'ios' || Platform.OS === 'web') && (
+                <AppleSignInButton
+                  onPress={handleAppleSignIn}
+                  isLoading={appleLoading}
+                  label="Continue with Apple"
+                />
+              )}
 
               {/* Google Sign-In Button */}
               <GoogleSignInButton

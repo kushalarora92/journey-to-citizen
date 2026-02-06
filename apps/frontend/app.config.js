@@ -27,6 +27,7 @@ module.exports = {
       infoPlist: {
         ITSAppUsesNonExemptEncryption: false,
       },
+      usesAppleSignIn: true,
     },
     android: {
       versionName: '1.1',
@@ -48,6 +49,7 @@ module.exports = {
       'expo-router',
       '@react-native-firebase/app',
       '@react-native-google-signin/google-signin',
+      'expo-apple-authentication',
       [
         'expo-build-properties',
         {

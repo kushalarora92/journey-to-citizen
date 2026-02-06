@@ -4,6 +4,7 @@ import { useAuth } from '@/context/AuthContext';
 import { router } from 'expo-router';
 import { AuthBranding } from '@/components/AuthBranding';
 import { GoogleSignInButton } from '@/components/GoogleSignInButton';
+import { AppleSignInButton } from '@/components/AppleSignInButton';
 import {
   Box,
   VStack,
@@ -29,8 +30,9 @@ export default function SignUpScreen() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
+  const [appleLoading, setAppleLoading] = useState(false);
   const [error, setError] = useState('');
-  const { signUp, signInWithGoogle } = useAuth();
+  const { signUp, signInWithGoogle, signInWithApple } = useAuth();
 
   const handleSignUp = async () => {
     setError('');
@@ -103,6 +105,35 @@ export default function SignUpScreen() {
       }
     } finally {
       setGoogleLoading(false);
+    }
+  };
+
+  const handleAppleSignIn = async () => {
+    setAppleLoading(true);
+    setError('');
+
+    try {
+      await signInWithApple();
+      // Navigation is handled by _layout.tsx
+    } catch (err: any) {
+      console.error('Apple sign in error:', err);
+      
+      let errorMessage = err.message || 'Failed to sign in with Apple';
+      
+      // Don't show error for user cancellation
+      if (errorMessage === 'Sign in was cancelled') {
+        setAppleLoading(false);
+        return;
+      }
+      
+      setError(errorMessage);
+      
+      // Show alert on mobile
+      if (Platform.OS !== 'web') {
+        Alert.alert('Apple Sign In Error', errorMessage);
+      }
+    } finally {
+      setAppleLoading(false);
     }
   };
 
@@ -180,7 +211,7 @@ export default function SignUpScreen() {
               <Button
                 size="lg"
                 onPress={handleSignUp}
-                isDisabled={loading || googleLoading}
+                isDisabled={loading || googleLoading || appleLoading}
               >
                 <ButtonText>{loading ? 'Creating Account...' : 'Sign Up'}</ButtonText>
               </Button>
@@ -191,6 +222,15 @@ export default function SignUpScreen() {
                 <Text size="sm" color="$textLight500">or</Text>
                 <Divider flex={1} />
               </Box>
+
+              {/* Apple Sign-In Button - Only show on iOS native and web */}
+              {(Platform.OS === 'ios' || Platform.OS === 'web') && (
+                <AppleSignInButton
+                  onPress={handleAppleSignIn}
+                  isLoading={appleLoading}
+                  label="Sign up with Apple"
+                />
+              )}
 
               {/* Google Sign-In Button */}
               <GoogleSignInButton
